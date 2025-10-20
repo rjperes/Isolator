@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using System.Text;
-using System.Text.Json;
 
 namespace Isolator;
 
@@ -132,9 +131,9 @@ public sealed class ProcessIsolationHost : BaseIsolationHost
         var result = IsolationHelper.Deserialize<ExecutionResult>(stdout.ToString());
         var resultObject = result?.Result;
 
-        if (result?.Result is JsonElement && !string.IsNullOrWhiteSpace(result?.ResultType))
+        if (result?.Result != null && !string.IsNullOrWhiteSpace(result?.ResultType))
         {
-            resultObject = JsonSerializer.Deserialize((JsonElement)result.Result, Type.GetType(result.ResultType)!);
+            resultObject = IsolationHelper.Deserialize(result.Result, Type.GetType(result.ResultType)!);
         }
 
         return (process.ExitCode, result!.StandardOutput, result.StandardError, resultObject, result.Properties);

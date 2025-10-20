@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
 using System.Text.Json;
+using static Microsoft.CodeAnalysis.CSharp.SyntaxTokenParser;
 
 namespace Isolator;
 
@@ -46,6 +47,16 @@ public static class IsolationHelper
         ArgumentException.ThrowIfNullOrWhiteSpace(json);
         return JsonSerializer.Deserialize<T>(json)
             ?? throw new InvalidOperationException("Failed to deserialize JSON.");
+    }
+
+    public static object? Deserialize(object obj, Type type)
+    {
+        ArgumentNullException.ThrowIfNull(obj);
+        if (obj is JsonElement)
+        {
+            return JsonSerializer.Deserialize((JsonElement)obj, type);
+        }
+        return Deserialize(obj.ToString() ?? string.Empty, type);
     }
 
     public static object? Deserialize(string json, Type type)
