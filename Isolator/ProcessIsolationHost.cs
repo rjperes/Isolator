@@ -1,28 +1,14 @@
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
 using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
 
 namespace Isolator;
 
-public sealed class ProcessIsolationHost : IIsolationHost
+public sealed class ProcessIsolationHost : BaseIsolationHost
 {
     private const string _dotnetFileName = "dotnet";
-    private const string _runnerName = "Runner";
     private static readonly string _version = new Version(Environment.Version.Major, Environment.Version.Minor, 0).ToString();
-    private static readonly string _isolatorAssemblyPath = typeof(IsolationHelper).Assembly.Location;
-    private static readonly string? _tpa = AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES") as string;
     private static readonly string _runtimeConfig = $"{{\n \"runtimeOptions\": {{\n \"tfm\": \"net9.0\",\n \"framework\": {{\n \"name\": \"Microsoft.NETCore.App\",\n \"version\": \"{_version}\"\n }},\n \"rollForward\": \"LatestMinor\"\n }}\n}}";
-    private static readonly CSharpParseOptions _parseOptions = CSharpParseOptions.Default.WithLanguageVersion(LanguageVersion.Preview);
-    private static readonly CSharpCompilationOptions _compilationOptions = new CSharpCompilationOptions(OutputKind.ConsoleApplication, optimizationLevel: OptimizationLevel.Release);
-
-    private static readonly string[] _requiredReferences =
-        [
-            typeof(object).Assembly.Location,
-            typeof(Console).Assembly.Location,
-            typeof(Task).Assembly.Location,
-        ];
 
     private static readonly string _programSource = $$"""
 using System;
@@ -62,16 +48,21 @@ internal class Program
         return JsonSerializer.Serialize(value);
     }
 
-    public async Task<PluginExecutionResult> ExecutePluginAsync<TPlugin>(TPlugin plugin, IsolationContext context, CancellationToken cancellationToken = default) where TPlugin : IPlugin, new()
+    public override async Task<PluginExecutionResult> ExecutePluginAsync<TPlugin>(TPlugin plugin, IsolationContext context, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(plugin);
         ArgumentNullException.ThrowIfNull(context);
 
-        var tempDir = Directory.CreateTempSubdirectory($"isolator-runner-{Guid.NewGuid()}");
+        var tempDir = CreateTempDirectory();
         try
         {
             // Compile the minimal runner in-memory and emit artifacts to the temp directory
-            var (outputDir, dllPath) = await CompileRunnerAsync(tempDir.FullName, cancellationToken);
+            var (outputDir, dllPath) = await CompileRunnerAsync(_programSource, tempDir.FullName, true, cancellationToken);
+
+            // Write minimal runtimeconfig.json so 'dotnet Runner.dll' can launch
+            await File.WriteAllTextAsync(Path.Combine(outputDir, $"{_runnerName}.runtimeconfig.json"), _runtimeConfig, cancellationToken);
+
+            CopyIsolationAssembly(outputDir);
 
             // Prepare envelope to pass plugin instance and isolation context
             var envelope = new PluginEnvelope(
@@ -94,84 +85,8 @@ internal class Program
         }
         finally
         {
-            try { tempDir.Delete(recursive: true); } catch { /* best effort cleanup */ }
+            DeleteTempDirectory(tempDir);
         }
-    }
-
-    private static async Task<(string OutputDir, string DllPath)> CompileRunnerAsync(string outputDir, CancellationToken ct)
-    {
-        var dllPath = Path.Combine(outputDir, $"{_runnerName}.dll");
-        var syntaxTree = CSharpSyntaxTree.ParseText(_programSource, _parseOptions);
-        var references = new List<MetadataReference>();
-
-        if (!string.IsNullOrWhiteSpace(_tpa))
-        {
-            foreach (var path in _tpa!.Split(Path.PathSeparator))
-            {
-                try
-                {
-                    var name = Path.GetFileName(path);
-
-                    if (name.StartsWith("System.", StringComparison.OrdinalIgnoreCase) ||
-                        name.Equals("System.Private.CoreLib.dll", StringComparison.OrdinalIgnoreCase) ||
-                        name.Equals("mscorlib.dll", StringComparison.OrdinalIgnoreCase) ||
-                        name.Equals("netstandard.dll", StringComparison.OrdinalIgnoreCase))
-                    {
-                        references.Add(MetadataReference.CreateFromFile(path));
-                    }
-                }
-                catch { }
-            }
-        }
-
-        // Ensure basic references are present
-        foreach (var r in _requiredReferences)
-        {
-            if (!references.OfType<PortableExecutableReference>().Any(m => string.Equals(m.FilePath, r, StringComparison.OrdinalIgnoreCase)))
-            {
-                references.Add(MetadataReference.CreateFromFile(r));
-            }
-        }
-
-        // Reference the Isolator assembly explicitly so the runner can use IsolationHelper and types
-        references.Add(MetadataReference.CreateFromFile(_isolatorAssemblyPath));
-
-        var compilation = CSharpCompilation.Create(
-            assemblyName: _runnerName,
-            syntaxTrees: [syntaxTree],
-            references: references,
-            options: _compilationOptions);
-
-        await using (var peStream = new MemoryStream())
-        {
-            var emitResult = compilation.Emit(peStream, cancellationToken: ct);
-
-            if (!emitResult.Success)
-            {
-                var diag = string.Join(Environment.NewLine, emitResult.Diagnostics.Select(d => d.ToString()));
-                throw new InvalidOperationException($"Failed to compile runner: {diag}");
-            }
-
-            peStream.Position = 0;
-            await using var fs = File.Create(dllPath);
-            await peStream.CopyToAsync(fs, ct);
-        }
-
-        // Copy Isolator.dll next to runner so runtime can resolve it
-        try
-        {
-            var targetIsolatorPath = Path.Combine(outputDir, Path.GetFileName(_isolatorAssemblyPath));
-            if (!File.Exists(targetIsolatorPath))
-            {
-                File.Copy(_isolatorAssemblyPath, targetIsolatorPath, overwrite: true);
-            }
-        }
-        catch { }
-
-        // Write minimal runtimeconfig.json so 'dotnet Runner.dll' can launch
-        await File.WriteAllTextAsync(Path.Combine(outputDir, $"{_runnerName}.runtimeconfig.json"), _runtimeConfig, ct);
-
-        return (outputDir, dllPath);
     }
 
     private static async Task<(int ExitCode, string StandardOutput, string StandardError, object? Result, Dictionary<string, object> Properties)> RunProcessAsync(
@@ -237,11 +152,6 @@ internal class Program
         }
 
         return (process.ExitCode, result!.StandardOutput, result.StandardError, resultObject, result.Properties);
-    }
-
-    public void Dispose()
-    {
-        // No unmanaged resources to dispose
     }
 }
 
