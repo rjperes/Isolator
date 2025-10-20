@@ -23,13 +23,11 @@ public sealed class ProcessIsolationHost : BaseIsolationHost
                 using (var stderr = {{nameof(IsolationHelper)}}.{{nameof(IsolationHelper.CaptureError)}}())
                 {
                     var result = plugin.{{nameof(IPlugin.Execute)}}(ctx);
-                    var output = stdout.ToString();
-                    var error = stderr.ToString();
                     response = new(
                         Result: result,
                         ResultType: result?.GetType()?.FullName,
-                        StandardOutput: output,
-                        StandardError: error,
+                        StandardOutput: stdout.ToString(),
+                        StandardError: stderr.ToString(),
                         Properties: ctx.Properties
                     );
                 }

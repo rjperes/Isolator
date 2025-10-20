@@ -5,13 +5,16 @@ namespace Isolator;
 
 public sealed class AssemblyLoadContextIsolationHost : BaseIsolationHost
 {
+    abstract class PluginWrapper
+    {
+        public static void Execute(dynamic plugin, dynamic context) { }
+    }
+
     private static readonly string _programSource = $$"""
-        using System;
-        using Isolator;
         [assembly:System.CodeDom.Compiler.GeneratedCode("{{typeof(IsolationHelper).Namespace}}", "{{typeof(IsolationHelper).Assembly.GetName().Version?.ToString()}}")]
-        public static class PluginWrapper
+        public static class {{nameof(PluginWrapper)}}
         {
-            public static object Execute(dynamic plugin, dynamic context)
+            public static object {{nameof(PluginWrapper.Execute)}}(dynamic plugin, dynamic context)
             {
                 return plugin.Execute(context);
             }
