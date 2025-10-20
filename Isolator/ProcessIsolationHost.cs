@@ -10,7 +10,7 @@ public sealed class ProcessIsolationHost : IIsolationHost
 {
     private const string _dotnetFileName = "dotnet";
     private const string _runnerName = "Runner";
-    private static readonly string _version = new Version(Environment.Version.Major, Environment.Version.Minor).ToString();
+    private static readonly string _version = new Version(Environment.Version.Major, Environment.Version.Minor, 0).ToString();
     private static readonly string _isolatorAssemblyPath = typeof(IsolationHelper).Assembly.Location;
     private static readonly string? _tpa = AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES") as string;
     private static readonly string _runtimeConfig = $"{{\n \"runtimeOptions\": {{\n \"tfm\": \"net9.0\",\n \"framework\": {{\n \"name\": \"Microsoft.NETCore.App\",\n \"version\": \"{_version}\"\n }},\n \"rollForward\": \"LatestMinor\"\n }}\n}}";
