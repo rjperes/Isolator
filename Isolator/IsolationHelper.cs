@@ -46,8 +46,10 @@ public static class IsolationHelper
 
         // Deserialize and cache the IsolationContext (if provided), otherwise create a new one
         var context = !string.IsNullOrWhiteSpace(envelope.ContextJson)
-        ? (JsonSerializer.Deserialize<IsolationContext>(envelope.ContextJson) ?? new IsolationContext())
-        : new IsolationContext();
+            ? (JsonSerializer.Deserialize<IsolationContext>(envelope.ContextJson) ?? new IsolationContext())
+            : new IsolationContext();
+
+        context.Arguments = Environment.GetCommandLineArgs();
 
         return ((IPlugin)pluginObj, context);
     }

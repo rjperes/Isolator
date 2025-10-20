@@ -10,7 +10,8 @@ internal class Program
             Properties = new Dictionary<string, object>
             {
                 ["Greeting"] = "Hello, World!"
-            }
+            },
+            Arguments = ["This", "is", "a", "test"]
         });
     }
 }

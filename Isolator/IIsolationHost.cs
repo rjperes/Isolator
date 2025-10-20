@@ -2,7 +2,7 @@
 
 public interface IIsolationHost : IDisposable
 {
-    Task<PluginExecutionResult> ExecutePluginAsync(IPlugin plugin, IsolationContext context, CancellationToken cancellationToken = default);
+    Task<PluginExecutionResult> ExecutePluginAsync<TPlugin>(TPlugin plugin, IsolationContext context, CancellationToken cancellationToken = default) where TPlugin : IPlugin, new();
 }
 
 public record PluginExecutionResult(int ExitCode, string StandardOutput, string StandardError);
