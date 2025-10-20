@@ -3,7 +3,7 @@ using System.Runtime.Loader;
 
 namespace Isolator;
 
-public class AssemblyLoadContextIsolationHost : BaseIsolationHost
+public sealed class AssemblyLoadContextIsolationHost : BaseIsolationHost
 {
     private static readonly string _programSource = $$"""
         using System;

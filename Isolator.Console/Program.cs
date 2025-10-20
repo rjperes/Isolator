@@ -16,6 +16,13 @@ internal class Program
         return res;
     }
 
+    static async Task<PluginExecutionResult> TestUsingNullIsolationHost<TPlugin>(TPlugin plugin, IsolationContext context) where TPlugin : IPlugin, new()
+    {
+        using var host = new NullIsolationHost();
+        var res = await host.ExecutePluginAsync(plugin, context);
+        return res;
+    }
+
     static async Task Main(string[] args)
     {
         var plugin = new HelloWorldPlugin();
@@ -30,5 +37,6 @@ internal class Program
 
         var res1 = await TestUsingAssemblyLoadContextIsolationHost(plugin, context);
         var res2 = await TestUsingProcessIsolationHost(plugin, context);
+        var res3 = await TestUsingNullIsolationHost(plugin, context);
     }
 }
