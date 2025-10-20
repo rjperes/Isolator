@@ -35,6 +35,23 @@ public static class IsolationHelper
         return new RestoreOutput(original, writer, action);
     }
 
+    public static string Serialize<T>(T value)
+    {
+        return JsonSerializer.Serialize(value);
+    }
+
+    public static T Deserialize<T>(string json)
+    {
+        return JsonSerializer.Deserialize<T>(json)
+            ?? throw new InvalidOperationException("Failed to deserialize JSON.");
+    }
+
+    public static object? Deserialize(string json, Type type)
+    {
+        return JsonSerializer.Deserialize(json, type)
+            ?? throw new InvalidOperationException("Failed to deserialize plugin instance.");
+    }
+
     public static (IPlugin, IsolationContext) GetBootstrap()
     {
         // Read an envelope with the plugin's assembly-qualified type name and its JSON payload
@@ -43,7 +60,7 @@ public static class IsolationHelper
         if (string.IsNullOrWhiteSpace(raw))
             throw new InvalidOperationException("No plugin data received on standard input.");
 
-        var envelope = JsonSerializer.Deserialize<PluginEnvelope>(raw)
+        var envelope = Deserialize<PluginEnvelope>(raw)
         ?? throw new InvalidOperationException("Failed to parse plugin envelope.");
 
         // If an assembly path is provided, try to load it to help resolve the plugin type
@@ -71,15 +88,19 @@ public static class IsolationHelper
             throw new InvalidOperationException($"Plugin type not found: {envelope.PluginType}");
         }
 
-        var pluginObj = JsonSerializer.Deserialize(envelope.PluginJson, pluginType)
-               ?? throw new InvalidOperationException("Failed to deserialize plugin instance.");
+        var pluginObj = Deserialize(envelope.PluginJson, pluginType) as IPlugin;
+
+        if (pluginObj is null)
+        {
+            throw new InvalidOperationException("Failed to deserialize plugin instance or not a plugin type.");
+        }
 
         // Deserialize and cache the IsolationContext (if provided), otherwise create a new one
         var context = !string.IsNullOrWhiteSpace(envelope.ContextJson)
-            ? (JsonSerializer.Deserialize<IsolationContext>(envelope.ContextJson) ?? new IsolationContext())
+            ? (Deserialize<IsolationContext>(envelope.ContextJson) ?? new IsolationContext())
             : new IsolationContext();
 
-        return ((IPlugin)pluginObj, context);
+        return (pluginObj!, context);
     }
 }
 

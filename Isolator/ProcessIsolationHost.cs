@@ -11,42 +11,37 @@ public sealed class ProcessIsolationHost : BaseIsolationHost
     private static readonly string _runtimeConfig = $"{{\n \"runtimeOptions\": {{\n \"tfm\": \"net9.0\",\n \"framework\": {{\n \"name\": \"Microsoft.NETCore.App\",\n \"version\": \"{_version}\"\n }},\n \"rollForward\": \"LatestMinor\"\n }}\n}}";
 
     private static readonly string _programSource = $$"""
-using System;
-using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
-using Isolator;
-[assembly:System.CodeDom.Compiler.GeneratedCode("{{typeof(IsolationHelper).Namespace}}", "{{typeof(IsolationHelper).Assembly.GetName().Version?.ToString()}}")]
-internal class Program
-{
-    public static void Main()
-    {
-        var (plugin, ctx) = {{nameof(IsolationHelper)}}.{{nameof(IsolationHelper.GetBootstrap)}}();
-        {{nameof(ExecutionResult)}} response = null;
-        using (var stdout = {{nameof(IsolationHelper)}}.{{nameof(IsolationHelper.CaptureOutput)}}())
-        using (var stderr = {{nameof(IsolationHelper)}}.{{nameof(IsolationHelper.CaptureError)}}())
+        using System;
+        using System.Text.Json;
+        using System.Threading;
+        using System.Threading.Tasks;
+        using Isolator;
+        [assembly:System.CodeDom.Compiler.GeneratedCode("{{typeof(IsolationHelper).Namespace}}", "{{typeof(IsolationHelper).Assembly.GetName().Version?.ToString()}}")]
+        internal class Program
         {
-            var result = plugin.{{nameof(IPlugin.Execute)}}(ctx);
-            var output = stdout.ToString();
-            var error = stderr.ToString();
-            response = new(
-                Result: result,
-                ResultType: (result != null) ? result.GetType().FullName : null,
-                StandardOutput: output,
-                StandardError: error,
-                Properties: ctx.Properties
-            );
+            public static void Main()
+            {
+                var (plugin, ctx) = {{nameof(IsolationHelper)}}.{{nameof(IsolationHelper.GetBootstrap)}}();
+                {{nameof(ExecutionResult)}} response = null;
+                using (var stdout = {{nameof(IsolationHelper)}}.{{nameof(IsolationHelper.CaptureOutput)}}())
+                using (var stderr = {{nameof(IsolationHelper)}}.{{nameof(IsolationHelper.CaptureError)}}())
+                {
+                    var result = plugin.{{nameof(IPlugin.Execute)}}(ctx);
+                    var output = stdout.ToString();
+                    var error = stderr.ToString();
+                    response = new(
+                        Result: result,
+                        ResultType: (result != null) ? result.GetType().FullName : null,
+                        StandardOutput: output,
+                        StandardError: error,
+                        Properties: ctx.Properties
+                    );
+                }
+
+                Console.Out.WriteLine(JsonSerializer.Serialize(response));
+            }
         }
-
-        Console.Out.WriteLine(JsonSerializer.Serialize(response));
-    }
-}
-""";
-
-    private static string Serialize<T>(T value)
-    {
-        return JsonSerializer.Serialize(value);
-    }
+        """;
 
     public override async Task<PluginExecutionResult> ExecutePluginAsync<TPlugin>(TPlugin plugin, IsolationContext context, CancellationToken cancellationToken = default)
     {
@@ -67,19 +62,16 @@ internal class Program
             // Prepare envelope to pass plugin instance and isolation context
             var envelope = new PluginEnvelope(
                 PluginType: plugin.GetType().AssemblyQualifiedName!,
-                PluginJson: Serialize(plugin),
+                PluginJson: IsolationHelper.Serialize(plugin),
                 PluginAssemblyPath: plugin.GetType().Assembly.Location,
-                ContextJson: Serialize(context)
+                ContextJson: IsolationHelper.Serialize(context)
             );
 
-            var envelopeJson = Serialize(envelope);
+            var envelopeJson = IsolationHelper.Serialize(envelope);
 
             var run = await RunProcessAsync(_dotnetFileName, dllPath, outputDir, cancellationToken, stdin: envelopeJson);
 
-            foreach (var kv in run.Properties)
-            {
-                context.Properties[kv.Key] = kv.Value;
-            }
+            CopyProperties(run.Properties, context.Properties);
 
             return new PluginExecutionResult(run.StandardOutput, run.StandardError, run.Result);
         }
@@ -143,7 +135,7 @@ internal class Program
             throw new InvalidOperationException("No output received from process.");
         }
 
-        var result = JsonSerializer.Deserialize<ExecutionResult>(stdout.ToString());
+        var result = IsolationHelper.Deserialize<ExecutionResult>(stdout.ToString());
         var resultObject = result?.Result;
 
         if (result?.Result is JsonElement && !string.IsNullOrWhiteSpace(result?.ResultType))

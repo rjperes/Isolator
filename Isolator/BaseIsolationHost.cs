@@ -28,6 +28,14 @@ namespace Isolator
             // Override in derived classes if needed
         }
 
+        protected static void CopyProperties(Dictionary<string, object> source, Dictionary<string, object> target)
+        {
+            foreach (var kv in source)
+            {
+                target[kv.Key] = kv.Value;
+            }
+        }
+
         protected static async Task<(string OutputDir, string DllPath)> CompileRunnerAsync(string programSource, string outputDir, bool isApp, CancellationToken ct)
         {
             var dllPath = Path.Combine(outputDir, $"{_runnerName}.dll");
