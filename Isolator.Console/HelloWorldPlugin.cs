@@ -2,12 +2,12 @@
 {
     public class HelloWorldPlugin : IPlugin
     {
-        public object Execute(IsolationContext ctx)
+        public object? Execute(IsolationContext ctx)
         {
             System.Console.WriteLine(ctx.Properties["Greeting"]);
             System.Console.WriteLine(string.Join(", ", ctx.Arguments));
             ctx.Properties["ExecutedAt"] = DateTime.UtcNow;
-            return 10;
+            return DateTime.UtcNow;
         }
     }
 }

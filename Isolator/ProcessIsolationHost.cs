@@ -220,7 +220,12 @@ internal class Program
             process.StandardInput.Close();
         }
 
-        await process.WaitForExitAsync(CancellationToken.None);
+        await process.WaitForExitAsync();
+
+        if (string.IsNullOrWhiteSpace(stdout.ToString()))
+        {
+            throw new InvalidOperationException("No output received from process.");
+        }
 
         var result = JsonSerializer.Deserialize<ExecutionResult>(stdout.ToString());
 

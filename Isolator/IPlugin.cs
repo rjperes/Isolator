@@ -2,5 +2,5 @@
 
 public interface IPlugin
 {
-    object Execute(IsolationContext ctx);
+    object? Execute(IsolationContext ctx);
 }
