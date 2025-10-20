@@ -1,10 +1,41 @@
-﻿using System.Reflection;
+﻿using System.CodeDom.Compiler;
+using System.Reflection;
 using System.Text.Json;
 
 namespace Isolator;
 
 public static class IsolationHelper
 {
+    public static RestoreOutput CaptureOutput()
+    {
+        return Capture(isError: false);
+    }
+
+    public static RestoreOutput CaptureError()
+    {
+        return Capture(isError: true);
+    }
+
+    private static RestoreOutput Capture(bool isError = false)
+    {
+        var original = isError ? Console.Error : Console.Out;
+        var writer = new StringWriter();
+        Action action = () => { };
+
+        if (isError)
+        {
+            Console.SetError(writer);
+            action = () => Console.SetError(original);
+        }
+        else
+        {
+            Console.SetOut(writer);
+            action = () => Console.SetOut(original);
+        }
+
+        return new RestoreOutput(original, writer, action);
+    }
+
     public static (IPlugin, IsolationContext) GetBootstrap()
     {
         // Read an envelope with the plugin's assembly-qualified type name and its JSON payload
@@ -49,9 +80,19 @@ public static class IsolationHelper
             ? (JsonSerializer.Deserialize<IsolationContext>(envelope.ContextJson) ?? new IsolationContext())
             : new IsolationContext();
 
-        context.Arguments = Environment.GetCommandLineArgs();
-
         return ((IPlugin)pluginObj, context);
     }
 }
+
+public class RestoreOutput(TextWriter original, StringWriter writer, Action action) : IDisposable
+{
+    public void Dispose()
+    {
+        action();
+    }
+
+    public override string ToString() => writer.ToString();
+    public TextWriter Original => original;
+}
+
 sealed record PluginEnvelope(string PluginType, string PluginJson, string PluginAssemblyPath, string ContextJson);

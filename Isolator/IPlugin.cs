@@ -2,5 +2,5 @@
 
 public interface IPlugin
 {
-    Task<int> ExecuteAsync(IsolationContext ctx, CancellationToken cancellationToken = default);
+    object Execute(IsolationContext ctx);
 }

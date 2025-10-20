@@ -25,19 +25,36 @@ public sealed class ProcessIsolationHost : IIsolationHost
         ];
 
     private static readonly string _programSource = $$"""
-        using System;
-        using System.Threading;
-        using System.Threading.Tasks;
-        using Isolator;
-        internal class Program
+using System;
+using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
+using Isolator;
+[assembly:System.CodeDom.Compiler.GeneratedCode("{{typeof(IsolationHelper).Namespace}}", "{{typeof(IsolationHelper).Assembly.GetName().Version?.ToString()}}")]
+internal class Program
+{
+    public static void Main()
+    {
+        var (plugin, ctx) = {{nameof(IsolationHelper)}}.{{nameof(IsolationHelper.GetBootstrap)}}();
+        {{nameof(ExecutionResult)}} response = null;
+        using (var stdout = {{nameof(IsolationHelper)}}.{{nameof(IsolationHelper.CaptureOutput)}}())
+        using (var stderr = {{nameof(IsolationHelper)}}.{{nameof(IsolationHelper.CaptureError)}}())
         {
-            public static async Task<int> Main(string[] args)
-            {
-                var (plugin, ctx) = {{nameof(IsolationHelper)}}.{{nameof(IsolationHelper.GetBootstrap)}}();
-                return await plugin.{{nameof(IPlugin.ExecuteAsync)}}(ctx, CancellationToken.None);
-            }
+            var result = plugin.{{nameof(IPlugin.Execute)}}(ctx);
+            var output = stdout.ToString();
+            var error = stderr.ToString();
+            response = new(
+                Result: result,
+                StandardOutput: output,
+                StandardError: error,
+                Properties: ctx.Properties
+            );
         }
-        """;
+
+        Console.Out.WriteLine(JsonSerializer.Serialize(response));
+    }
+}
+""";
 
     private static string Serialize<T>(T value)
     {
@@ -67,7 +84,12 @@ public sealed class ProcessIsolationHost : IIsolationHost
 
             var run = await RunProcessAsync(_dotnetFileName, dllPath, outputDir, cancellationToken, stdin: envelopeJson);
 
-            return new PluginExecutionResult(run.ExitCode, run.StandardOutput, run.StandardError);
+            foreach (var kv in run.Properties)
+            {
+                context.Properties[kv.Key] = kv.Value;
+            }
+
+            return new PluginExecutionResult(run.StandardOutput, run.StandardError, run.Result);
         }
         finally
         {
@@ -151,7 +173,7 @@ public sealed class ProcessIsolationHost : IIsolationHost
         return (outputDir, dllPath);
     }
 
-    private static async Task<(int ExitCode, string StandardOutput, string StandardError)> RunProcessAsync(
+    private static async Task<(string StandardOutput, string StandardError, object? Result, Dictionary<string, object> Properties)> RunProcessAsync(
         string fileName,
         string arguments,
         string workingDirectory,
@@ -200,7 +222,9 @@ public sealed class ProcessIsolationHost : IIsolationHost
 
         await process.WaitForExitAsync(CancellationToken.None);
 
-        return (process.ExitCode, stdout.ToString(), stderr.ToString());
+        var result = JsonSerializer.Deserialize<ExecutionResult>(stdout.ToString());
+
+        return (result!.StandardOutput, result.StandardError, result.Result, result.Properties);
     }
 
     public void Dispose()
@@ -208,3 +232,5 @@ public sealed class ProcessIsolationHost : IIsolationHost
         // No unmanaged resources to dispose
     }
 }
+
+public record ExecutionResult(string StandardOutput, string StandardError, object Result, Dictionary<string, object> Properties);
