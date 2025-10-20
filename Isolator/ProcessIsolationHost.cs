@@ -45,6 +45,7 @@ internal class Program
             var error = stderr.ToString();
             response = new(
                 Result: result,
+                ResultType: (result != null) ? result.GetType().FullName : null,
                 StandardOutput: output,
                 StandardError: error,
                 Properties: ctx.Properties
@@ -173,7 +174,7 @@ internal class Program
         return (outputDir, dllPath);
     }
 
-    private static async Task<(string StandardOutput, string StandardError, object? Result, Dictionary<string, object> Properties)> RunProcessAsync(
+    private static async Task<(int ExitCode, string StandardOutput, string StandardError, object? Result, Dictionary<string, object> Properties)> RunProcessAsync(
         string fileName,
         string arguments,
         string workingDirectory,
@@ -197,8 +198,8 @@ internal class Program
         var stdout = new StringBuilder();
         var stderr = new StringBuilder();
 
-        process.OutputDataReceived += (_, e) => { if (e.Data is not null) stdout.AppendLine(e.Data); };
-        process.ErrorDataReceived += (_, e) => { if (e.Data is not null) stderr.AppendLine(e.Data); };
+        process.OutputDataReceived += (_, e) => { if (!string.IsNullOrWhiteSpace(e.Data)) stdout.AppendLine(e.Data); };
+        process.ErrorDataReceived += (_, e) => { if (!string.IsNullOrWhiteSpace(e.Data)) stderr.AppendLine(e.Data); };
 
         if (!process.Start())
         {
@@ -220,7 +221,7 @@ internal class Program
             process.StandardInput.Close();
         }
 
-        await process.WaitForExitAsync();
+        await process.WaitForExitAsync(CancellationToken.None);
 
         if (string.IsNullOrWhiteSpace(stdout.ToString()))
         {
@@ -228,8 +229,14 @@ internal class Program
         }
 
         var result = JsonSerializer.Deserialize<ExecutionResult>(stdout.ToString());
+        var resultObject = result?.Result;
 
-        return (result!.StandardOutput, result.StandardError, result.Result, result.Properties);
+        if (result?.Result is JsonElement && !string.IsNullOrWhiteSpace(result?.ResultType))
+        {
+            resultObject = JsonSerializer.Deserialize((JsonElement)result.Result, Type.GetType(result.ResultType)!);
+        }
+
+        return (process.ExitCode, result!.StandardOutput, result.StandardError, resultObject, result.Properties);
     }
 
     public void Dispose()
@@ -238,4 +245,4 @@ internal class Program
     }
 }
 
-public record ExecutionResult(string StandardOutput, string StandardError, object Result, Dictionary<string, object> Properties);
+public record ExecutionResult(string StandardOutput, string StandardError, object? Result, string? ResultType, Dictionary<string, object> Properties);
