@@ -37,31 +37,38 @@ public static class IsolationHelper
 
     public static string Serialize<T>(T value)
     {
+        ArgumentNullException.ThrowIfNull(value);
         return JsonSerializer.Serialize(value);
     }
 
     public static T Deserialize<T>(string json)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(json);
         return JsonSerializer.Deserialize<T>(json)
             ?? throw new InvalidOperationException("Failed to deserialize JSON.");
     }
 
     public static object? Deserialize(string json, Type type)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(json);
+        ArgumentNullException.ThrowIfNull(type);
         return JsonSerializer.Deserialize(json, type)
             ?? throw new InvalidOperationException("Failed to deserialize plugin instance.");
     }
 
-    public static (IPlugin, IsolationContext) GetBootstrap()
+    public static (IPlugin, IsolationContext) GetProcessBootstrap()
     {
         // Read an envelope with the plugin's assembly-qualified type name and its JSON payload
         using var reader = new StreamReader(Console.OpenStandardInput());
         var raw = reader.ReadToEnd();
+
         if (string.IsNullOrWhiteSpace(raw))
+        {
             throw new InvalidOperationException("No plugin data received on standard input.");
+        }
 
         var envelope = Deserialize<PluginEnvelope>(raw)
-        ?? throw new InvalidOperationException("Failed to parse plugin envelope.");
+            ?? throw new InvalidOperationException("Failed to parse plugin envelope.");
 
         // If an assembly path is provided, try to load it to help resolve the plugin type
         if (!string.IsNullOrWhiteSpace(envelope.PluginAssemblyPath) && File.Exists(envelope.PluginAssemblyPath))
@@ -71,6 +78,7 @@ public static class IsolationHelper
 
         // Resolve the plugin type
         var pluginType = Type.GetType(envelope.PluginType, throwOnError: false);
+
         if (pluginType is null && !string.IsNullOrWhiteSpace(envelope.PluginAssemblyPath) && File.Exists(envelope.PluginAssemblyPath))
         {
             try
@@ -83,6 +91,7 @@ public static class IsolationHelper
                 throw new InvalidOperationException($"Plugin type not found: {envelope.PluginType}", ex);
             }
         }
+
         if (pluginType is null)
         {
             throw new InvalidOperationException($"Plugin type not found: {envelope.PluginType}");
@@ -95,7 +104,7 @@ public static class IsolationHelper
             throw new InvalidOperationException("Failed to deserialize plugin instance or not a plugin type.");
         }
 
-        // Deserialize and cache the IsolationContext (if provided), otherwise create a new one
+        // Deserialize the IsolationContext (if provided), otherwise create a new one
         var context = !string.IsNullOrWhiteSpace(envelope.ContextJson)
             ? (Deserialize<IsolationContext>(envelope.ContextJson) ?? new IsolationContext())
             : new IsolationContext();
@@ -104,7 +113,7 @@ public static class IsolationHelper
     }
 }
 
-public class RestoreOutput(TextWriter original, StringWriter writer, Action action) : IDisposable
+public sealed class RestoreOutput(TextWriter original, StringWriter writer, Action action) : IDisposable
 {
     public void Dispose()
     {
@@ -115,4 +124,4 @@ public class RestoreOutput(TextWriter original, StringWriter writer, Action acti
     public TextWriter Original => original;
 }
 
-sealed record PluginEnvelope(string PluginType, string PluginJson, string PluginAssemblyPath, string ContextJson);
+public sealed record PluginEnvelope(string PluginType, string PluginJson, string PluginAssemblyPath, string ContextJson);

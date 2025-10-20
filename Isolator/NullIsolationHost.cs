@@ -8,6 +8,9 @@ public sealed class NullIsolationHost : IIsolationHost
 
     public Task<PluginExecutionResult> ExecutePluginAsync<TPlugin>(TPlugin plugin, IsolationContext context, CancellationToken cancellationToken = default) where TPlugin : IPlugin, new()
     {
+        ArgumentNullException.ThrowIfNull(plugin);
+        ArgumentNullException.ThrowIfNull(context);
+
         var originalStdout = Console.Out;
         var originalStderr = Console.Error;
 

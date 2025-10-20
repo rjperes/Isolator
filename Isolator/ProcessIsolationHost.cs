@@ -12,7 +12,6 @@ public sealed class ProcessIsolationHost : BaseIsolationHost
 
     private static readonly string _programSource = $$"""
         using System;
-        using System.Text.Json;
         using System.Threading;
         using System.Threading.Tasks;
         using Isolator;
@@ -21,7 +20,7 @@ public sealed class ProcessIsolationHost : BaseIsolationHost
         {
             public static void Main()
             {
-                var (plugin, ctx) = {{nameof(IsolationHelper)}}.{{nameof(IsolationHelper.GetBootstrap)}}();
+                var (plugin, ctx) = {{nameof(IsolationHelper)}}.{{nameof(IsolationHelper.GetProcessBootstrap)}}();
                 {{nameof(ExecutionResult)}} response = null;
                 using (var stdout = {{nameof(IsolationHelper)}}.{{nameof(IsolationHelper.CaptureOutput)}}())
                 using (var stderr = {{nameof(IsolationHelper)}}.{{nameof(IsolationHelper.CaptureError)}}())
@@ -38,7 +37,7 @@ public sealed class ProcessIsolationHost : BaseIsolationHost
                     );
                 }
 
-                Console.Out.WriteLine(JsonSerializer.Serialize(response));
+                Console.Out.WriteLine({{nameof(IsolationHelper)}}.{{nameof(IsolationHelper.Serialize)}}(response));
             }
         }
         """;
@@ -147,4 +146,4 @@ public sealed class ProcessIsolationHost : BaseIsolationHost
     }
 }
 
-public record ExecutionResult(string StandardOutput, string StandardError, object? Result, string? ResultType, Dictionary<string, object> Properties);
+public sealed record ExecutionResult(string StandardOutput, string StandardError, object? Result, string? ResultType, Dictionary<string, object> Properties);
