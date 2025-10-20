@@ -30,7 +30,7 @@ public sealed class ProcessIsolationHost : BaseIsolationHost
                     var error = stderr.ToString();
                     response = new(
                         Result: result,
-                        ResultType: (result != null) ? result.GetType().FullName : null,
+                        ResultType: result?.GetType()?.FullName,
                         StandardOutput: output,
                         StandardError: error,
                         Properties: ctx.Properties
