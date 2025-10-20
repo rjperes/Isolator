@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/Solution Items/">
     <File Path=".gitignore" />
+    <File Path="README.md" />
   </Folder>
   <Project Path="Isolator.Console/Isolator.Console.csproj" />
   <Project Path="Isolator/Isolator.csproj" />
