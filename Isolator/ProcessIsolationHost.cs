@@ -11,9 +11,6 @@ public sealed class ProcessIsolationHost : BaseIsolationHost
     private static readonly string _runtimeConfig = $"{{\n \"runtimeOptions\": {{\n \"tfm\": \"net9.0\",\n \"framework\": {{\n \"name\": \"Microsoft.NETCore.App\",\n \"version\": \"{_version}\"\n }},\n \"rollForward\": \"LatestMinor\"\n }}\n}}";
 
     private static readonly string _programSource = $$"""
-        using System;
-        using System.Threading;
-        using System.Threading.Tasks;
         using Isolator;
         [assembly:System.CodeDom.Compiler.GeneratedCode("{{typeof(IsolationHelper).Namespace}}", "{{typeof(IsolationHelper).Assembly.GetName().Version?.ToString()}}")]
         internal class Program
@@ -21,7 +18,7 @@ public sealed class ProcessIsolationHost : BaseIsolationHost
             public static void Main()
             {
                 var (plugin, ctx) = {{nameof(IsolationHelper)}}.{{nameof(IsolationHelper.GetProcessBootstrap)}}();
-                {{nameof(ExecutionResult)}} response = null;
+                {{nameof(ExecutionResult)}} response;
                 using (var stdout = {{nameof(IsolationHelper)}}.{{nameof(IsolationHelper.CaptureOutput)}}())
                 using (var stderr = {{nameof(IsolationHelper)}}.{{nameof(IsolationHelper.CaptureError)}}())
                 {
@@ -37,7 +34,7 @@ public sealed class ProcessIsolationHost : BaseIsolationHost
                     );
                 }
 
-                Console.Out.WriteLine({{nameof(IsolationHelper)}}.{{nameof(IsolationHelper.Serialize)}}(response));
+                System.Console.Out.WriteLine({{nameof(IsolationHelper)}}.{{nameof(IsolationHelper.Serialize)}}(response));
             }
         }
         """;
