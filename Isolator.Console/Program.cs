@@ -25,6 +25,7 @@ internal class Program
 
     static async Task Main(string[] args)
     {
+        IsolationHelper.GetProcessBootstrap();
         var plugin = new HelloWorldPlugin();
         var context = new IsolationContext
         {
