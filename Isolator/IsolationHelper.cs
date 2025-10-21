@@ -1,6 +1,6 @@
-﻿using System.Reflection;
+﻿using System.CodeDom.Compiler;
+using System.Reflection;
 using System.Text.Json;
-using static Microsoft.CodeAnalysis.CSharp.SyntaxTokenParser;
 
 namespace Isolator;
 
@@ -67,8 +67,18 @@ public static class IsolationHelper
             ?? throw new InvalidOperationException("Failed to deserialize plugin instance.");
     }
 
+    /// <summary>
+    /// Should not be called directly.
+    /// </summary>
+    /// <returns>The current plugin and context.</returns>
+    /// <exception cref="InvalidOperationException">If called by a non-generated assembly.</exception>
     public static (IPlugin, IsolationContext) GetProcessBootstrap()
     {
+        if (!string.Equals(Assembly.GetExecutingAssembly().GetCustomAttribute<GeneratedCodeAttribute>()?.Tool, typeof(IsolationHelper).Namespace))
+        {
+            throw new InvalidOperationException("This method can only be called from inside of a generated assembly.");
+        }
+
         // Read an envelope with the plugin's assembly-qualified type name and its JSON payload
         using var reader = new StreamReader(Console.OpenStandardInput());
         var raw = reader.ReadToEnd();

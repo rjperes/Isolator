@@ -5,6 +5,9 @@ namespace Isolator;
 
 public sealed class AssemblyLoadContextIsolationHost : BaseIsolationHost
 {
+    /// <summary>
+    /// This type is not used, it is used just to illustrate the generated class.
+    /// </summary>
     abstract class PluginWrapper
     {
         public static void Execute(dynamic plugin, dynamic context) { }
