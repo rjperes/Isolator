@@ -46,6 +46,10 @@ public sealed class ProcessIsolationHost : BaseIsolationHost
 
     public ProcessIsolationHost(string userName, string password, string domain, bool loadUserProfile)
     {
+        if (Environment.OSVersion.Platform != PlatformID.Win32NT)
+        {
+            throw new PlatformNotSupportedException("Process isolation with alternate user credentials is only supported on Windows-based systems.");
+        }
         _userName = userName;
         _password = password;
         _domain = domain;
