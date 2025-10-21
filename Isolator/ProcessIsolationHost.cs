@@ -35,6 +35,22 @@ public sealed class ProcessIsolationHost : BaseIsolationHost
             }
         }
         """;
+    private readonly string _userName = string.Empty;
+    private readonly string? _password = null;
+    private readonly string _domain = string.Empty;
+    private readonly bool _loadUserProfile = false;
+
+    public ProcessIsolationHost()
+    {        
+    }
+
+    public ProcessIsolationHost(string userName, string password, string domain, bool loadUserProfile)
+    {
+        _userName = userName;
+        _password = password;
+        _domain = domain;
+        _loadUserProfile = loadUserProfile;
+    }
 
     public override async Task<PluginExecutionResult> ExecutePluginAsync<TPlugin>(TPlugin plugin, IsolationContext context, CancellationToken cancellationToken = default)
     {
@@ -74,7 +90,7 @@ public sealed class ProcessIsolationHost : BaseIsolationHost
         }
     }
 
-    private static async Task<(int ExitCode, string StandardOutput, string StandardError, object? Result, Dictionary<string, object> Properties)> RunProcessAsync(
+    private async Task<(int ExitCode, string StandardOutput, string StandardError, object? Result, Dictionary<string, object> Properties)> RunProcessAsync(
         string fileName,
         string arguments,
         string workingDirectory,
@@ -90,7 +106,11 @@ public sealed class ProcessIsolationHost : BaseIsolationHost
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,
-            CreateNoWindow = true
+            CreateNoWindow = true,
+            UserName = _userName,
+            PasswordInClearText = _password,
+            Domain = _domain,
+            LoadUserProfile = _loadUserProfile
         };
 
         using var process = new Process { StartInfo = psi, EnableRaisingEvents = true };
