@@ -74,7 +74,7 @@ public static class IsolationHelper
     /// <exception cref="InvalidOperationException">If called by a non-generated assembly.</exception>
     public static (IPlugin, IsolationContext) GetProcessBootstrap()
     {
-        if (!string.Equals(Assembly.GetExecutingAssembly().GetCustomAttribute<GeneratedCodeAttribute>()?.Tool, typeof(IsolationHelper).Namespace))
+        if (!string.Equals(Assembly.GetEntryAssembly()?.GetCustomAttribute<GeneratedCodeAttribute>()?.Tool, typeof(IsolationHelper).Namespace))
         {
             throw new InvalidOperationException("This method can only be called from inside of a generated assembly.");
         }
