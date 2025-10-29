@@ -1,5 +1,3 @@
-using System;
-using System.Reflection;
 using System.Text.Json;
 
 namespace Isolator;
@@ -12,7 +10,7 @@ public interface ISerializer
     object? Deserialize(string json, Type type);
 }
 
-public class JsonSerializer : ISerializer
+public class IsolationJsonSerializer : ISerializer
 {
     public string Serialize<T>(T value)
     {

@@ -2,14 +2,13 @@
 using System.Net.Sockets;
 using System.Runtime.Loader;
 using System.Text;
-using System.Threading;
 
 namespace Isolator;
 
 public class IsolationHostServer : IDisposable
 {
     private TcpListener? _listener;
-    private readonly CancellationTokenSource _cts;
+    private CancellationTokenSource? _cts;
 
     public async Task ReceiveAsync(uint port, CancellationToken cancellationToken)
     {
@@ -31,10 +30,11 @@ public class IsolationHostServer : IDisposable
 
     public void Dispose()
     {
-         _cts.Cancel();
+         _cts?.Cancel();
         _listener?.Stop();
         _listener ??= null;
-        _cts.Dispose();
+        _cts?.Dispose();
+        _cts ??= null;
     }
 
     private async Task HandleClient(TcpClient client)
