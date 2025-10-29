@@ -4,7 +4,26 @@ public class IsolationHostServer : IDisposable
 {
     private CancellationTokenSource? _cts;
 
-    public ISerializer Serializer { get; init; } = new IsolationJsonSerializer();
+    private IReceiver? _receiver;
+    private bool _selfReceiver;
+
+    public IReceiver Receiver
+    {
+        get
+        {
+            if (_receiver == null)
+            {
+                _receiver = new TcpReceiver();
+                _selfReceiver = true;
+            }
+            return _receiver;
+        }
+        init
+        {
+            _receiver = value;
+            _selfReceiver = false;
+        }
+    }
 
     public async Task ReceiveAsync(uint port, CancellationToken cancellationToken)
     {
@@ -14,13 +33,8 @@ public class IsolationHostServer : IDisposable
         }
 
         _cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-
-        using var listener = new TcpReceiver
-        {
-            Serializer = Serializer
-        };
-
-        await listener.ReceiveAsync(port, _cts.Token);
+        
+        await Receiver.ReceiveAsync(port, _cts.Token);
     }
 
     public void Dispose()
@@ -28,5 +42,10 @@ public class IsolationHostServer : IDisposable
         _cts?.Cancel();
         _cts?.Dispose();
         _cts ??= null;
+        if (_selfReceiver)
+        {
+            _receiver?.Dispose();
+            _receiver = null;
+        }
     }
 }

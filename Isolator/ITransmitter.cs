@@ -25,7 +25,7 @@ public class TcpTransmitter : ITransmitter
         var assemblyBytes = File.ReadAllBytes(dllPath);
 
         using var client = new TcpClient();
-        var addresses = Dns.GetHostAddresses(host);
+        var addresses = await Dns.GetHostAddressesAsync(host, cancellationToken);
 
         var ipv4Address = addresses.SingleOrDefault(x => x.AddressFamily == AddressFamily.InterNetwork);
 

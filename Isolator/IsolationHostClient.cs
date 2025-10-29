@@ -1,8 +1,27 @@
 ﻿namespace Isolator;
 
-public class IsolationHostClient
+public class IsolationHostClient : IDisposable
 {
-    public ISerializer Serializer { get; init; } = new IsolationJsonSerializer();
+    private ITransmitter? _transmitter;
+    private bool _selfTransmitter;
+
+    public ITransmitter Transmitter
+    {
+        get
+        {
+            if (_transmitter == null)
+            {
+                _transmitter = new TcpTransmitter();
+                _selfTransmitter = true;
+            }
+            return _transmitter;
+        }
+        init
+        {
+            _transmitter = value;
+            _selfTransmitter = false;
+        }
+    }
 
     public async Task<PluginExecutionResult> TransmitAsync(string host, uint port, IPlugin plugin, IsolationContext context, CancellationToken cancellationToken = default)
     {
@@ -22,11 +41,15 @@ public class IsolationHostClient
             throw new ArgumentException($"Type '{pluginType.FullName}' must be a public non-abstract, non-generic class.", nameof(plugin));
         }
 
-        using var transmitter = new TcpTransmitter
-        {
-            Serializer = Serializer
-        };
+        return await Transmitter.TransmitAsync(host, (int)port, pluginType.Assembly, pluginType, plugin, context, cancellationToken);
+    }
 
-        return await transmitter.TransmitAsync(host, (int)port, pluginType.Assembly, pluginType, plugin, context, cancellationToken);
+    public void Dispose()
+    {
+        if (_selfTransmitter)
+        {
+            _transmitter?.Dispose();
+            _transmitter = null;
+        }
     }
 }
