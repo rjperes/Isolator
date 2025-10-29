@@ -5,6 +5,8 @@ using System.Text;
 
 namespace Isolator;
 
+public record ClientMessage(byte[] AssemblyBytes, string PluginTypeName, string Plugin, string Context);
+
 public interface IReceiver : IDisposable
 {
     Task ReceiveAsync(uint port, CancellationToken cancellationToken);
@@ -46,56 +48,43 @@ public class TcpReceiver : IReceiver
 
         try
         {
-            // 1) read assembly bytes
-            var assemblyLength = br.ReadInt32();
-            var assemblyBytes = br.ReadBytes(assemblyLength);
-
-            // 2) read type name
-            var typeNameLength = br.ReadInt32();
-            var typeName = Encoding.UTF8.GetString(br.ReadBytes(typeNameLength));
-
-            // 3) read plugin
-            var pluginLength = br.ReadInt32();
-            var pluginString = Encoding.UTF8.GetString(br.ReadBytes(pluginLength));
-
-            // 4) read context
-            var contextLength = br.ReadInt32();
-            var contextString = Encoding.UTF8.GetString(br.ReadBytes(contextLength));
-            var context = Serializer != null ? Serializer.Deserialize<IsolationContext>(contextString) : IsolationHelper.Deserialize<IsolationContext>(contextString);
+            var messageBytes = ReadBytes(br);
+            var messageString = Encoding.UTF8.GetString(messageBytes);
+            var message = Serializer != null ? Serializer.Deserialize<ClientMessage>(messageString) : IsolationHelper.Deserialize<ClientMessage>(messageString);
 
             // Load into a new context from bytes
             var asc = new AssemblyLoadContext("IsolationHostContext", isCollectible: true);
-            var assembly = asc.LoadFromStream(new MemoryStream(assemblyBytes));
+            var assembly = asc.LoadFromStream(new MemoryStream(message.AssemblyBytes));
 
             // Resolve type and method
-            var type = assembly.GetType(typeName, throwOnError: false);
+            var pluginType = assembly.GetType(message.PluginTypeName, throwOnError: false);
 
-            if (type == null)
+            if (pluginType == null)
             {
-                var error = $"Type '{typeName}' not found in assembly.";
+                var error = $"Type '{message.PluginTypeName}' not found in assembly.";
                 WriteString(bw, error);
                 return;
             }
 
-            if (!typeof(IPlugin).IsAssignableFrom(type))
+            if (!typeof(IPlugin).IsAssignableFrom(pluginType))
             {
-                var error = $"Type '{typeName}' is not of a plugin type.";
+                var error = $"Type '{pluginType.FullName}' is not of a plugin type.";
                 WriteString(bw, error);
                 return;
             }
 
-            if (!type.IsPublic || !type.IsClass || type.IsAbstract || type.IsGenericType)
+            if (!pluginType.IsPublic || !pluginType.IsClass || pluginType.IsAbstract || pluginType.IsGenericType)
             {
-                var error = $"Type '{typeName}' is not of a public non-abstract, non-generic plugin type.";
+                var error = $"Type '{pluginType.FullName}' is not of a public non-abstract, non-generic plugin type.";
                 WriteString(bw, error);
                 return;
             }
 
-            var instance = IsolationHelper.Deserialize(pluginString, type) as IPlugin;
+            var instance = IsolationHelper.Deserialize(message.Plugin, pluginType) as IPlugin;
 
             if (instance == null)
             {
-                var error = $"Type '{typeName}' does not implement IPlugin interface.";
+                var error = $"Type '{pluginType.FullName}' does not implement IPlugin interface.";
                 WriteString(bw, error);
                 return;
             }
@@ -109,7 +98,9 @@ public class TcpReceiver : IReceiver
             Console.SetOut(stdoutWriter);
             Console.SetError(stderrWriter);
 
-            var result = instance.Execute(context!);
+            var context = Serializer != null ? Serializer.Deserialize<IsolationContext>(message.Context) : IsolationHelper.Deserialize<IsolationContext>(message.Context);
+
+            var result = instance.Execute(context);
 
             Console.SetOut(originalStdout);
             Console.SetError(originalStderr);
@@ -118,14 +109,21 @@ public class TcpReceiver : IReceiver
 
             var properties = Serializer != null ? Serializer.Serialize(context.Properties) : IsolationHelper.Serialize(context.Properties);
 
-            // send back result
-            WriteString(bw, result?.GetType().AssemblyQualifiedName + ":" + resultString);
-            WriteString(bw, stdoutWriter.ToString());
-            WriteString(bw, stderrWriter.ToString());
-            WriteString(bw, properties);
+            var response = new ServerMessage
+            (
+                ResultTypeName: result?.GetType().AssemblyQualifiedName!,
+                Result: resultString,
+                Stdout: stdoutWriter.ToString(),
+                Stderr: stderrWriter.ToString(),
+                Properties: properties
+            );
+
+            var responseString = Serializer != null ? Serializer.Serialize(response) : IsolationHelper.Serialize(response);
+
+            WriteString(bw, responseString);
 
             instance = null;
-            type = null;
+            pluginType = null;
             assembly = null;
 
             asc.Unload();
@@ -142,5 +140,11 @@ public class TcpReceiver : IReceiver
         bw.Write(bytes.Length);
         bw.Write(bytes);
         bw.Flush();
+    }
+
+    private byte[] ReadBytes(BinaryReader br)
+    {
+        var length = br.ReadInt32();
+        return br.ReadBytes(length);
     }
 }

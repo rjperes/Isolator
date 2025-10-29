@@ -33,7 +33,7 @@ public class IsolationHostServer : IDisposable
         }
 
         _cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        
+
         await Receiver.ReceiveAsync(port, _cts.Token);
     }
 

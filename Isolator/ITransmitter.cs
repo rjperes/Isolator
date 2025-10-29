@@ -5,6 +5,8 @@ using System.Text;
 
 namespace Isolator;
 
+public record ServerMessage(string ResultTypeName, string Result, string Stdout, string Stderr, string Properties);
+
 public interface ITransmitter : IDisposable
 {
     Task<PluginExecutionResult> TransmitAsync(string host, int port, Assembly assembly, Type pluginType, IPlugin plugin, IsolationContext context, CancellationToken cancellationToken);
@@ -39,59 +41,47 @@ public class TcpTransmitter : ITransmitter
         using var bw = new BinaryWriter(ns, Encoding.UTF8, leaveOpen: true);
         using var br = new BinaryReader(ns, Encoding.UTF8, leaveOpen: true);
 
-        // 1) assembly length + bytes
-        bw.Write(assemblyBytes.Length);
-        bw.Write(assemblyBytes);
+        var message = new ClientMessage(
+            AssemblyBytes: assemblyBytes,
+            PluginTypeName: pluginType.FullName!,
+            Plugin: Serializer != null ? Serializer.Serialize(plugin) : IsolationHelper.Serialize(plugin),
+            Context: Serializer != null ? Serializer.Serialize(context) : IsolationHelper.Serialize(context)
+        );
 
-        // 2) type name
-        var typeNameBytes = Encoding.UTF8.GetBytes(pluginType.FullName!);
-        bw.Write(typeNameBytes.Length);
-        bw.Write(typeNameBytes);
+        var messageString = Serializer != null ? Serializer.Serialize(message) : IsolationHelper.Serialize(message);
 
-        // 3) plugin
-        var pluginString = Serializer != null ? Serializer.Serialize(plugin) : IsolationHelper.Serialize(plugin);
-        var pluginBytes = Encoding.UTF8.GetBytes(pluginString);
-        bw.Write(pluginBytes.Length);
-        bw.Write(pluginBytes);
-
-        // 4) context
-        var contextString = Serializer != null ? Serializer.Serialize(context) : IsolationHelper.Serialize(context);
-        var contextBytes = Encoding.UTF8.GetBytes(contextString);
-        bw.Write(contextBytes.Length);
-        bw.Write(contextBytes);
-
-        bw.Flush();
+        WriteString(bw, messageString);
 
         // Wait for response (length-prefixed)
-        var responseLength = br.ReadInt32();
-        var responseBytes = br.ReadBytes(responseLength);
+        var responseBytes = ReadBytes(br);
         var responseString = Encoding.UTF8.GetString(responseBytes);
-        var responseSeparatorIndex = responseString.IndexOf(':');
-        var responseTypeString = responseString.Substring(0, responseSeparatorIndex);
-        var responseType = Type.GetType(responseTypeString!, throwOnError: false);
-        var responseJson = responseString.Substring(responseSeparatorIndex + 1);
-        var response = Serializer != null ? Serializer.Deserialize(responseJson, responseType!) : IsolationHelper.Deserialize(responseJson, responseType!);
+        var response = Serializer != null ? Serializer.Deserialize<ServerMessage>(responseString) : IsolationHelper.Deserialize<ServerMessage>(responseString);
 
-        // Wait for stdout
-        var stdoutLength = br.ReadInt32();
-        var stdoutBytes = br.ReadBytes(stdoutLength);
+        var responseResultType = Type.GetType(response.ResultTypeName, throwOnError: false);
 
-        // Wait for stderr
-        var stderrLength = br.ReadInt32();
-        var stderrBytes = br.ReadBytes(stderrLength);
-
-        // Wait for properties
-        var propertiesLength = br.ReadInt32();
-        var propertiesBytes = br.ReadBytes(propertiesLength);
-        var properties = Serializer != null ? Serializer.Deserialize<Dictionary<string, object>>(Encoding.UTF8.GetString(propertiesBytes)) : IsolationHelper.Deserialize<Dictionary<string, object>>(Encoding.UTF8.GetString(propertiesBytes));
-
-        context.Properties = properties!;
+        var responseResult = Serializer != null
+                ? Serializer.Deserialize(response.Result, responseResultType!)
+                : IsolationHelper.Deserialize(response.Result, responseResultType!);
 
         return new PluginExecutionResult
         (
-            StandardOutput: Encoding.UTF8.GetString(stdoutBytes),
-            StandardError: Encoding.UTF8.GetString(stderrBytes),
-            Result: response
+            StandardOutput: response.Stdout,
+            StandardError: response.Stderr,
+            Result: responseResult
         );
+    }
+
+    private void WriteString(BinaryWriter bw, string s)
+    {
+        var bytes = Encoding.UTF8.GetBytes(s);
+        bw.Write(bytes.Length);
+        bw.Write(bytes);
+        bw.Flush();
+    }
+
+    private byte[] ReadBytes(BinaryReader br)
+    {
+        var length = br.ReadInt32();
+        return br.ReadBytes(length);
     }
 }
