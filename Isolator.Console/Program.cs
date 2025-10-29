@@ -43,21 +43,21 @@ internal class Program
             Arguments = ["This", "is", "a", "test"]
         };
 
-        using var evt = new ManualResetEventSlim(false);
-
         ThreadPool.QueueUserWorkItem(async _ =>
         {
-            evt.Set();
             await server.ReceiveAsync(5000, CancellationToken.None);
         });
 
         var plugin = new HelloWorldPlugin();
-        
-        evt.Wait();
 
         //var res1 = await TestUsingAssemblyLoadContextIsolationHost(plugin, context);
         //var res2 = await TestUsingProcessIsolationHost(plugin, context);
         //var res3 = await TestUsingNullIsolationHost(plugin, context);
+
+        Thread.Sleep(3000);
+
         var res4 = await TestUsingClientIsolationHost(plugin, context);
+
+        System.Console.ReadLine();
     }
 }

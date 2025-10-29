@@ -31,12 +31,14 @@ public class IsolationHostClient
         using var client = new TcpClient();
         var addresses = Dns.GetHostAddresses(host);
 
-        if (addresses == null || addresses.Length == 0)
+        var ipv4Address = addresses.SingleOrDefault(x => x.AddressFamily == AddressFamily.InterNetwork);
+
+        if (addresses == null || ipv4Address == null)
         {
             throw new ArgumentException($"Invalid host {host}.", nameof(host));
         }
 
-        await client.ConnectAsync(addresses[0], (int)port, cancellationToken);
+        await client.ConnectAsync(ipv4Address, (int)port, cancellationToken);
         using var ns = client.GetStream();
         using var bw = new BinaryWriter(ns, Encoding.UTF8, leaveOpen: true);
         using var br = new BinaryReader(ns, Encoding.UTF8, leaveOpen: true);
