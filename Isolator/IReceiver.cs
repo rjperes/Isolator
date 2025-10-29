@@ -20,6 +20,8 @@ public class TcpReceiver : IReceiver
 
     public async Task ReceiveAsync(uint port, CancellationToken cancellationToken)
     {
+        ObjectDisposedException.ThrowIf(_listener == null, this);
+
         _listener = new TcpListener(IPAddress.Any, (int)port);
         _listener.Start();
 

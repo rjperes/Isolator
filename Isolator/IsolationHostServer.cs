@@ -27,6 +27,8 @@ public class IsolationHostServer : IDisposable
 
     public async Task ReceiveAsync(uint port, CancellationToken cancellationToken)
     {
+        ObjectDisposedException.ThrowIf(_cts == null, this);
+
         if (port < 1024 || port > 65535)
         {
             throw new ArgumentOutOfRangeException(nameof(port), "Port must be between 1024 and 65535.");

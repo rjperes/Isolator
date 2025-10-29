@@ -50,9 +50,9 @@ internal class Program
 
         var plugin = new HelloWorldPlugin();
 
-        //var res1 = await TestUsingAssemblyLoadContextIsolationHost(plugin, context);
-        //var res2 = await TestUsingProcessIsolationHost(plugin, context);
-        //var res3 = await TestUsingNullIsolationHost(plugin, context);
+        var res1 = await TestUsingAssemblyLoadContextIsolationHost(plugin, context);
+        var res2 = await TestUsingProcessIsolationHost(plugin, context);
+        var res3 = await TestUsingNullIsolationHost(plugin, context);
 
         //wait for the server to start
         Thread.Sleep(3000);
