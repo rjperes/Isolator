@@ -38,7 +38,7 @@ public sealed class AssemblyLoadContextIsolationHost : BaseIsolationHost
             var alc = new PluginLoadContext(dllPath);
             var asm = alc.LoadFromAssemblyPath(dllPath);
             var type = asm.GetTypes()[0];
-            var method = type.GetMethod("Execute", BindingFlags.Public | BindingFlags.Static);
+            var method = type.GetMethod(nameof(IPlugin.Execute), BindingFlags.Public | BindingFlags.Static);
 
             var originalStdout = Console.Out;
             var originalStderr = Console.Error;
