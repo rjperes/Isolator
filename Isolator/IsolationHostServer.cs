@@ -2,12 +2,14 @@
 using System.Net.Sockets;
 using System.Runtime.Loader;
 using System.Text;
+using System.Threading;
 
 namespace Isolator;
 
 public class IsolationHostServer : IDisposable
 {
     private TcpListener? _listener;
+    private readonly CancellationTokenSource _cts;
 
     public async Task ReceiveAsync(uint port, CancellationToken cancellationToken)
     {
@@ -16,20 +18,23 @@ public class IsolationHostServer : IDisposable
             throw new ArgumentOutOfRangeException(nameof(port), "Port must be between 1024 and 65535.");
         }
 
+        _cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         _listener = new TcpListener(IPAddress.Any, (int)port);
         _listener.Start();
 
         while (true)
         {
-            using var client = await _listener.AcceptTcpClientAsync(cancellationToken);
+            using var client = await _listener.AcceptTcpClientAsync(_cts.Token);
             await HandleClient(client);
         }
     }
 
     public void Dispose()
     {
+         _cts.Cancel();
         _listener?.Stop();
         _listener ??= null;
+        _cts.Dispose();
     }
 
     private async Task HandleClient(TcpClient client)
