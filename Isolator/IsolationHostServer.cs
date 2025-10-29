@@ -10,6 +10,8 @@ public class IsolationHostServer : IDisposable
     private TcpListener? _listener;
     private CancellationTokenSource? _cts;
 
+    public ISerializer Serializer { get; init; } = new IsolationJsonSerializer();
+
     public async Task ReceiveAsync(uint port, CancellationToken cancellationToken)
     {
         if (port < 1024 || port > 65535)
@@ -30,7 +32,7 @@ public class IsolationHostServer : IDisposable
 
     public void Dispose()
     {
-         _cts?.Cancel();
+        _cts?.Cancel();
         _listener?.Stop();
         _listener ??= null;
         _cts?.Dispose();
@@ -60,7 +62,7 @@ public class IsolationHostServer : IDisposable
             // 4) read context
             var contextLength = br.ReadInt32();
             var contextString = Encoding.UTF8.GetString(br.ReadBytes(contextLength));
-            var context = IsolationHelper.Deserialize<IsolationContext>(contextString);
+            var context = Serializer != null ? Serializer.Deserialize<IsolationContext>(contextString) : IsolationHelper.Deserialize<IsolationContext>(contextString);
 
             // Load into a new context from bytes
             var asc = new AssemblyLoadContext("IsolationHostContext", isCollectible: true);
@@ -113,7 +115,7 @@ public class IsolationHostServer : IDisposable
             Console.SetOut(originalStdout);
             Console.SetError(originalStderr);
 
-            var resultString = IsolationHelper.Serialize(result);
+            var resultString = Serializer != null ? Serializer.Serialize(result) : IsolationHelper.Serialize(result);
 
             // send back result
             WriteString(bw, result?.GetType().AssemblyQualifiedName + ":" + resultString);

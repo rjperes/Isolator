@@ -6,6 +6,8 @@ namespace Isolator;
 
 public class IsolationHostClient
 {
+    public ISerializer Serializer { get; init; } = new IsolationJsonSerializer();
+
     public async Task<PluginExecutionResult> TransmitAsync(string host, uint port, IPlugin plugin, IsolationContext context, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrEmpty(host);
@@ -53,13 +55,13 @@ public class IsolationHostClient
         bw.Write(typeNameBytes);
 
         // 3) plugin
-        var pluginString = IsolationHelper.Serialize(plugin);
+        var pluginString = Serializer != null ? Serializer.Serialize(plugin) : IsolationHelper.Serialize(plugin);
         var pluginBytes = Encoding.UTF8.GetBytes(pluginString);
         bw.Write(pluginBytes.Length);
         bw.Write(pluginBytes);
 
         // 4) context
-        var contextString = IsolationHelper.Serialize(context);
+        var contextString = Serializer != null ? Serializer.Serialize(context) : IsolationHelper.Serialize(context);
         var contextBytes = Encoding.UTF8.GetBytes(contextString);
         bw.Write(contextBytes.Length);
         bw.Write(contextBytes);
@@ -74,7 +76,7 @@ public class IsolationHostClient
         var responseTypeString = responseString.Substring(0, responseSeparatorIndex);
         var responseType = Type.GetType(responseTypeString!, throwOnError: false);
         var responseJson = responseString.Substring(responseSeparatorIndex + 1);
-        var response = IsolationHelper.Deserialize(responseJson, responseType!);
+        var response = Serializer != null ? Serializer.Deserialize(responseJson, responseType!) : IsolationHelper.Deserialize(responseJson, responseType!);
 
         // Wait for stdout
         var stdoutLength = br.ReadInt32();

@@ -1,7 +1,7 @@
 ﻿
 namespace Isolator
 {
-    public class ClientIsolationHost(string host, uint port) : IIsolationHost
+    public class ClientIsolationHost(string host, uint port, ISerializer? serializer = null) : IIsolationHost
     {
         private readonly IsolationHostClient _client = new();
 
