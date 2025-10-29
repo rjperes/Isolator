@@ -82,11 +82,11 @@ public sealed class ProcessIsolationHost : BaseIsolationHost
 
             var envelopeJson = IsolationHelper.Serialize(envelope);
 
-            var run = await RunProcessAsync(_dotnetFileName, dllPath, outputDir, cancellationToken, stdin: envelopeJson);
+            var (exitCode, standardOutput, standardError, result, properties) = await RunProcessAsync(_dotnetFileName, dllPath, outputDir, cancellationToken, stdin: envelopeJson);
 
-            CopyProperties(run.Properties, context.Properties);
+            CopyProperties(properties, context.Properties);
 
-            return new PluginExecutionResult(run.StandardOutput, run.StandardError, run.Result);
+            return new PluginExecutionResult(standardOutput, standardError, result);
         }
         finally
         {
@@ -101,6 +101,7 @@ public sealed class ProcessIsolationHost : BaseIsolationHost
         CancellationToken cancellationToken,
         string? stdin = null)
     {
+#pragma warning disable CA1416 // Validate platform compatibility
         var psi = new ProcessStartInfo
         {
             FileName = fileName,
@@ -112,10 +113,11 @@ public sealed class ProcessIsolationHost : BaseIsolationHost
             UseShellExecute = false,
             CreateNoWindow = true,
             UserName = _userName,
-            PasswordInClearText = _password,
             Domain = _domain,
+            PasswordInClearText = _password,
             LoadUserProfile = _loadUserProfile
         };
+#pragma warning restore CA1416 // Validate platform compatibility
 
         using var process = new Process { StartInfo = psi, EnableRaisingEvents = true };
 

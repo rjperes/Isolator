@@ -54,6 +54,7 @@ internal class Program
         //var res2 = await TestUsingProcessIsolationHost(plugin, context);
         //var res3 = await TestUsingNullIsolationHost(plugin, context);
 
+        //wait for the server to start
         Thread.Sleep(3000);
 
         var res4 = await TestUsingClientIsolationHost(plugin, context);
