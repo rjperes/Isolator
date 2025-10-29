@@ -24,6 +24,10 @@ public class TcpReceiver : IReceiver
         while (true)
         {
             using var client = await _listener.AcceptTcpClientAsync(cancellationToken);
+            if (cancellationToken.IsCancellationRequested)
+            {
+                break;
+            }
             await HandleClient(client);
         }
     }
