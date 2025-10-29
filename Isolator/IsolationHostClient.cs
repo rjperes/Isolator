@@ -25,7 +25,6 @@ public class IsolationHostClient : IDisposable
 
     public async Task<PluginExecutionResult> TransmitAsync(string host, uint port, IPlugin plugin, IsolationContext context, CancellationToken cancellationToken = default)
     {
-        ObjectDisposedException.ThrowIf(_transmitter == null, this);
         ArgumentException.ThrowIfNullOrEmpty(host);
         ArgumentNullException.ThrowIfNull(plugin);
         ArgumentNullException.ThrowIfNull(context);

@@ -20,8 +20,6 @@ public class TcpReceiver : IReceiver
 
     public async Task ReceiveAsync(uint port, CancellationToken cancellationToken)
     {
-        ObjectDisposedException.ThrowIf(_listener == null, this);
-
         _listener = new TcpListener(IPAddress.Any, (int)port);
         _listener.Start();
 
@@ -146,7 +144,14 @@ public class TcpReceiver : IReceiver
 
     private byte[] ReadBytes(BinaryReader br)
     {
+        ReadOnlySpan<byte> _errorPrefix = new byte[] { 69, 82, 82, 79, 82, 58, 32 }.AsSpan();
         var length = br.ReadInt32();
-        return br.ReadBytes(length);
+        var message = br.ReadBytes(length);
+        if (message.AsSpan().StartsWith(_errorPrefix))
+        {
+            var errorMessage = Encoding.UTF8.GetString(message);
+            throw new InvalidOperationException(errorMessage.Substring(8));
+        }
+        return message;
     }
 }
