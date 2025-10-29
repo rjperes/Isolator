@@ -24,7 +24,7 @@ public sealed class ProcessIsolationHost : BaseIsolationHost
                     var result = plugin.{{nameof(IPlugin.Execute)}}(ctx);
                     response = new(
                         Result: result,
-                        ResultType: result?.GetType()?.FullName,
+                        ResultType: result?.GetType()?.AssemblyQualifiedName,
                         StandardOutput: stdout.ToString(),
                         StandardError: stderr.ToString(),
                         Properties: ctx.Properties
@@ -41,7 +41,7 @@ public sealed class ProcessIsolationHost : BaseIsolationHost
     private readonly bool _loadUserProfile = false;
 
     public ProcessIsolationHost()
-    {        
+    {
     }
 
     public ProcessIsolationHost(string userName, string password, string domain, bool loadUserProfile)
