@@ -82,7 +82,7 @@ public sealed class AssemblyLoadContextIsolationHost : BaseIsolationHost
         {
             var path = _resolver.ResolveAssemblyToPath(assemblyName);
 
-            if (!string.IsNullOrEmpty(path))
+            if (!string.IsNullOrWhiteSpace(path))
             {
                 return LoadFromAssemblyPath(path);
             }
