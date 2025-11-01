@@ -74,14 +74,9 @@ public sealed class AssemblyLoadContextIsolationHost : BaseIsolationHost
         }
     }
 
-    class PluginLoadContext : AssemblyLoadContext
+    class PluginLoadContext(string pluginPath) : AssemblyLoadContext(isCollectible: true)
     {
-        private readonly AssemblyDependencyResolver _resolver;
-
-        public PluginLoadContext(string pluginPath) : base(isCollectible: true)
-        {
-            _resolver = new AssemblyDependencyResolver(pluginPath);
-        }
+        private readonly AssemblyDependencyResolver _resolver = new(pluginPath);
 
         protected override Assembly? Load(AssemblyName assemblyName)
         {
