@@ -10,9 +10,7 @@ public sealed class AssemblyLoadContextIsolationHost : BaseIsolationHost
     /// </summary>
     public static class PluginWrapper
     {
-#pragma warning disable IDE0060 // Remove unused parameter
         public static object Execute(dynamic plugin, dynamic context) => throw new NotImplementedException();
-#pragma warning restore IDE0060 // Remove unused parameter
     }
 
     private static readonly string _programSource = $$"""
