@@ -8,10 +8,10 @@ public sealed class AssemblyLoadContextIsolationHost : BaseIsolationHost
     /// <summary>
     /// This type is not used, it is used just to illustrate the generated class.
     /// </summary>
-    abstract class PluginWrapper
+    public static class PluginWrapper
     {
 #pragma warning disable IDE0060 // Remove unused parameter
-        public static void Execute(dynamic plugin, dynamic context) { }
+        public static object Execute(dynamic plugin, dynamic context) => throw new NotImplementedException();
 #pragma warning restore IDE0060 // Remove unused parameter
     }
 
@@ -21,7 +21,7 @@ public sealed class AssemblyLoadContextIsolationHost : BaseIsolationHost
         {
             public static object {{nameof(PluginWrapper.Execute)}}(dynamic plugin, dynamic context)
             {
-                return plugin.Execute(context);
+                return plugin.{{nameof(IPlugin.Execute)}}(context);
             }
         }
         """;
