@@ -30,7 +30,7 @@ internal class Program
         return res;
     }
 
-    static async Task Main(string[] args)
+    static async Task Main()
     {
         using var server = new IsolationHostServer();
         var client = new IsolationHostClient();

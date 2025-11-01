@@ -10,7 +10,9 @@ public sealed class AssemblyLoadContextIsolationHost : BaseIsolationHost
     /// </summary>
     abstract class PluginWrapper
     {
+#pragma warning disable IDE0060 // Remove unused parameter
         public static void Execute(dynamic plugin, dynamic context) { }
+#pragma warning restore IDE0060 // Remove unused parameter
     }
 
     private static readonly string _programSource = $$"""
@@ -19,7 +21,7 @@ public sealed class AssemblyLoadContextIsolationHost : BaseIsolationHost
         {
             public static object {{nameof(PluginWrapper.Execute)}}(dynamic plugin, dynamic context)
             {
-                return plugin.{{nameof(IPlugin.Execute)}}(context);
+                return plugin.Execute(context);
             }
         }
         """;
