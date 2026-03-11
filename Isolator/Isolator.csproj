@@ -8,6 +8,7 @@
 
  <ItemGroup>
  <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.10.0" />
+ <PackageReference Include="ReferencesScanner" Version="1.0.0" />
  </ItemGroup>
 
 </Project>

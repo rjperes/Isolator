@@ -8,9 +8,9 @@ public sealed class AssemblyLoadContextIsolationHost : BaseIsolationHost
     /// <summary>
     /// This type is not used, it is used just to illustrate the generated class.
     /// </summary>
-    abstract class PluginWrapper
+    public static class PluginWrapper
     {
-        public static void Execute(dynamic plugin, dynamic context) { }
+        public static object Execute(dynamic plugin, dynamic context) => throw new NotImplementedException();
     }
 
     private static readonly string _programSource = $$"""
@@ -19,7 +19,7 @@ public sealed class AssemblyLoadContextIsolationHost : BaseIsolationHost
         {
             public static object {{nameof(PluginWrapper.Execute)}}(dynamic plugin, dynamic context)
             {
-                return plugin.Execute(context);
+                return plugin.{{nameof(IPlugin.Execute)}}(context);
             }
         }
         """;
@@ -38,7 +38,7 @@ public sealed class AssemblyLoadContextIsolationHost : BaseIsolationHost
             var alc = new PluginLoadContext(dllPath);
             var asm = alc.LoadFromAssemblyPath(dllPath);
             var type = asm.GetTypes()[0];
-            var method = type.GetMethod("Execute", BindingFlags.Public | BindingFlags.Static);
+            var method = type.GetMethod(nameof(PluginWrapper.Execute), BindingFlags.Public | BindingFlags.Static);
 
             var originalStdout = Console.Out;
             var originalStderr = Console.Error;
@@ -54,6 +54,7 @@ public sealed class AssemblyLoadContextIsolationHost : BaseIsolationHost
             Console.SetOut(originalStdout);
             Console.SetError(originalStderr);
 
+            method = null;
             type = null;
             asm = null;
 
@@ -71,20 +72,15 @@ public sealed class AssemblyLoadContextIsolationHost : BaseIsolationHost
         }
     }
 
-    class PluginLoadContext : AssemblyLoadContext
+    class PluginLoadContext(string pluginPath) : AssemblyLoadContext(isCollectible: true)
     {
-        private readonly AssemblyDependencyResolver _resolver;
-
-        public PluginLoadContext(string pluginPath) : base(isCollectible: true)
-        {
-            _resolver = new AssemblyDependencyResolver(pluginPath);
-        }
+        private readonly AssemblyDependencyResolver _resolver = new(pluginPath);
 
         protected override Assembly? Load(AssemblyName assemblyName)
         {
             var path = _resolver.ResolveAssemblyToPath(assemblyName);
 
-            if (!string.IsNullOrEmpty(path))
+            if (!string.IsNullOrWhiteSpace(path))
             {
                 return LoadFromAssemblyPath(path);
             }

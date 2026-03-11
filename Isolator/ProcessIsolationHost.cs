@@ -24,7 +24,7 @@ public sealed class ProcessIsolationHost : BaseIsolationHost
                     var result = plugin.{{nameof(IPlugin.Execute)}}(ctx);
                     response = new(
                         Result: result,
-                        ResultType: result?.GetType()?.FullName,
+                        ResultType: result?.GetType()?.AssemblyQualifiedName,
                         StandardOutput: stdout.ToString(),
                         StandardError: stderr.ToString(),
                         Properties: ctx.Properties
@@ -41,7 +41,7 @@ public sealed class ProcessIsolationHost : BaseIsolationHost
     private readonly bool _loadUserProfile = false;
 
     public ProcessIsolationHost()
-    {        
+    {
     }
 
     public ProcessIsolationHost(string userName, string password, string domain, bool loadUserProfile)
@@ -82,11 +82,11 @@ public sealed class ProcessIsolationHost : BaseIsolationHost
 
             var envelopeJson = IsolationHelper.Serialize(envelope);
 
-            var run = await RunProcessAsync(_dotnetFileName, dllPath, outputDir, cancellationToken, stdin: envelopeJson);
+            var (exitCode, standardOutput, standardError, result, properties) = await RunProcessAsync(_dotnetFileName, dllPath, outputDir, envelopeJson, cancellationToken);
 
-            CopyProperties(run.Properties, context.Properties);
+            CopyProperties(properties, context.Properties);
 
-            return new PluginExecutionResult(run.StandardOutput, run.StandardError, run.Result);
+            return new PluginExecutionResult(standardOutput, standardError, result);
         }
         finally
         {
@@ -98,9 +98,10 @@ public sealed class ProcessIsolationHost : BaseIsolationHost
         string fileName,
         string arguments,
         string workingDirectory,
-        CancellationToken cancellationToken,
-        string? stdin = null)
+        string stdin,
+        CancellationToken cancellationToken)
     {
+#pragma warning disable CA1416 // Validate platform compatibility
         var psi = new ProcessStartInfo
         {
             FileName = fileName,
@@ -112,10 +113,11 @@ public sealed class ProcessIsolationHost : BaseIsolationHost
             UseShellExecute = false,
             CreateNoWindow = true,
             UserName = _userName,
-            PasswordInClearText = _password,
             Domain = _domain,
+            PasswordInClearText = _password,
             LoadUserProfile = _loadUserProfile
         };
+#pragma warning restore CA1416 // Validate platform compatibility
 
         using var process = new Process { StartInfo = psi, EnableRaisingEvents = true };
 
@@ -141,7 +143,7 @@ public sealed class ProcessIsolationHost : BaseIsolationHost
         if (!string.IsNullOrWhiteSpace(stdin))
         {
             await process.StandardInput.WriteAsync(stdin);
-            await process.StandardInput.FlushAsync();
+            await process.StandardInput.FlushAsync(cancellationToken);
             process.StandardInput.Close();
         }
 
