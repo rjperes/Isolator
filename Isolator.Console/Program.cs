@@ -30,6 +30,13 @@ internal class Program
         return res;
     }
 
+    static async Task<PluginExecutionResult> TestUsingDockerIsolationHost<TPlugin>(TPlugin plugin, IsolationContext context) where TPlugin : IPlugin, new()
+    {
+        using var host = new DockerIsolatorHost();
+        var res = await host.ExecutePluginAsync(plugin, context);
+        return res;
+    }
+
     static async Task Main()
     {
         using var server = new IsolationHostServer();
@@ -50,14 +57,14 @@ internal class Program
 
         var plugin = new HelloWorldPlugin();
 
-        //var res1 = await TestUsingAssemblyLoadContextIsolationHost(plugin, context);
-        //var res2 = await TestUsingProcessIsolationHost(plugin, context);
-        //var res3 = await TestUsingNullIsolationHost(plugin, context);
-
         //wait for the server to start
         Thread.Sleep(3000);
 
-        var res4 = await TestUsingClientIsolationHost(plugin, context);
+        //var res1 = await TestUsingAssemblyLoadContextIsolationHost(plugin, context);
+        //var res2 = await TestUsingProcessIsolationHost(plugin, context);
+        //var res3 = await TestUsingNullIsolationHost(plugin, context);
+        //var res4 = await TestUsingClientIsolationHost(plugin, context);
+        var res5 = await TestUsingDockerIsolationHost(plugin, context);
 
         System.Console.ReadLine();
     }
