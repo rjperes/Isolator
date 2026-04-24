@@ -8,6 +8,7 @@
 
  <ItemGroup>
  <PackageReference Include="Docker.DotNet" Version="3.125.15" />
+ <PackageReference Include="Docker.DotNet.BasicAuth" Version="3.125.15" />
  <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.10.0" />
  <PackageReference Include="ReferencesScanner" Version="1.0.0" />
  </ItemGroup>

@@ -1,4 +1,5 @@
 ﻿using Docker.DotNet;
+using Docker.DotNet.BasicAuth;
 using Docker.DotNet.Models;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -12,6 +13,15 @@ public class DockerIsolatorHost : IIsolationHost
     public DockerIsolatorHost()
     {
         _client = new DockerClientConfiguration().CreateClient();
+    }
+
+    public DockerIsolatorHost(Uri dockerUrl, string? username = null, string? password = null)
+    {
+        Credentials credentials = !string.IsNullOrWhiteSpace(username) && !string.IsNullOrWhiteSpace(password) ?
+            new BasicAuthCredentials(username!, password!) :
+            new AnonymousCredentials();
+
+        _client = new DockerClientConfiguration(dockerUrl, credentials).CreateClient();
     }
 
     public void Dispose()
