@@ -4,5 +4,6 @@
     <File Path="README.md" />
   </Folder>
   <Project Path="Isolator.Console/Isolator.Console.csproj" />
+  <Project Path="Isolator.Docker/Isolator.Docker.csproj" Id="1074bb2b-f943-4cf5-8e25-0275813a9592" />
   <Project Path="Isolator/Isolator.csproj" />
 </Solution>
