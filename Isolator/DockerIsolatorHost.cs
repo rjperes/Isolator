@@ -142,9 +142,19 @@ public class DockerIsolatorHost : IIsolationHost
             resultObject = IsolationHelper.Deserialize(result.Result, Type.GetType(result.ResultType)!);
         }
 
+        CopyProperties(result!.Properties, context.Properties);
+
         var pluginResult = new PluginExecutionResult(result!.StandardOutput, result.StandardError, resultObject);
 
         return pluginResult;
+    }
+
+    private static void CopyProperties(Dictionary<string, object> sourceProperties, Dictionary<string, object> targetProperties)
+    {
+        foreach (var kv in sourceProperties)
+        {
+            targetProperties[kv.Key] = kv.Value;
+        }
     }
 
     public async Task<PluginExecutionResult> ExecutePluginAsync<TPlugin>(TPlugin plugin, IsolationContext context, CancellationToken cancellationToken = default) where TPlugin : IPlugin, new()
