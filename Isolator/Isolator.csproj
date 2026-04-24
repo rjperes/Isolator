@@ -4,7 +4,15 @@
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <Title>Isolator</Title>
+    <Authors>Ricardo Peres</Authors>
+    <PackageProjectUrl>https://github.com/rjperes/Isolator</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/rjperes/Isolator</RepositoryUrl>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="https:\github.com\rjperes\Isolator\README.md" />
+  </ItemGroup>
 
  <ItemGroup>
  <PackageReference Include="Docker.DotNet" Version="3.125.15" />

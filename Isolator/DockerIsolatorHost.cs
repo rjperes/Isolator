@@ -170,8 +170,9 @@ public class DockerIsolatorHost : IIsolationHost
     public async Task<PluginExecutionResult> ExecutePluginAsync<TPlugin>(TPlugin plugin, IsolationContext context, CancellationToken cancellationToken = default) where TPlugin : IPlugin, new()
     {
         var hostFolder = Path.GetDirectoryName(plugin.GetType().Assembly.Location);
+        var assemblyFileName = Path.GetFileName(plugin.GetType().Assembly.Location);
 
-        var result = await RunAsync(hostFolder!, Path.GetFileName(GetType().Assembly.Location), plugin.GetType().AssemblyQualifiedName!, context, cancellationToken);
+        var result = await RunAsync(hostFolder!, assemblyFileName, plugin.GetType().AssemblyQualifiedName!, context, cancellationToken);
 
         return result;
     }

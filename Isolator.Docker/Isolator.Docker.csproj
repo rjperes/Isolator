@@ -5,7 +5,10 @@
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+    <Title>Isolator</Title>
+    <Authors>Ricardo Peres</Authors>
+    <PackageProjectUrl>https://github.com/rjperes/Isolator</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/rjperes/Isolator</RepositoryUrl>
   </PropertyGroup>
 
   <ItemGroup>
