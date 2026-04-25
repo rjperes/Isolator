@@ -169,6 +169,8 @@ public class DockerIsolatorHost : IIsolationHost
 
     public async Task<PluginExecutionResult> ExecutePluginAsync<TPlugin>(TPlugin plugin, IsolationContext context, CancellationToken cancellationToken = default) where TPlugin : IPlugin, new()
     {
+        ObjectDisposedException.ThrowIf(_client is null, nameof(DockerIsolatorHost));
+
         var hostFolder = Path.GetDirectoryName(plugin.GetType().Assembly.Location);
         var assemblyFileName = Path.GetFileName(plugin.GetType().Assembly.Location);
 
