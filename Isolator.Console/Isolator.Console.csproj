@@ -8,7 +8,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Isolator.Docker\Isolator.Docker.csproj" />
     <ProjectReference Include="..\Isolator\Isolator.csproj" />
   </ItemGroup>
 
