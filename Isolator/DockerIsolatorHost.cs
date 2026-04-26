@@ -71,7 +71,7 @@ public class DockerIsolatorHost : IIsolationHost
                 [
                     $"{hostFolder}:{containerMountPath}:ro"
                 ],
-                AutoRemove = true,
+                AutoRemove = false,
             },
         }, cancellationToken);
 
@@ -143,6 +143,11 @@ public class DockerIsolatorHost : IIsolationHost
 
         await logstdoutTask;
         await logstderrTask;
+
+        if (stdout.Length == 0 && stderr.Length > 0)
+        {
+            throw new Exception(stderr.ToString());
+        }
 
         var result = IsolationHelper.Deserialize<ExecutionResult>(stdout.ToString());
         object? resultObject = null;
