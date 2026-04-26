@@ -56,7 +56,7 @@ public class DockerIsolatorHost : IIsolationHost
             cancellationToken: cancellationToken);
 
         var containerMountPath = "/work";
-        var containerAssemblyPath = $"{containerMountPath}/Isolator.Docker.dll";
+        var containerAssemblyPath = $"{containerMountPath}/Isolator.Docker.exe";
 
         // Create container
         var createResponse = await _client.Containers.CreateContainerAsync(new CreateContainerParameters
@@ -71,7 +71,7 @@ public class DockerIsolatorHost : IIsolationHost
                 [
                     $"{hostFolder}:{containerMountPath}:ro"
                 ],
-                AutoRemove = false,
+                AutoRemove = true,
             },
         }, cancellationToken);
 

@@ -15,4 +15,7 @@
     <ProjectReference Include="..\Isolator\Isolator.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="$(TargetDir)Isolator.Docker.exe" Pack="true" PackagePath="./Isolator.Docker.exe" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

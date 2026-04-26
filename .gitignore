@@ -9,3 +9,5 @@
 /Isolator.Console/obj
 /Isolator.Docker/bin
 /Isolator.Docker/obj
+/Isolator.ReferencesScanner/bin
+/Isolator.ReferencesScanner/obj
