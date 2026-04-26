@@ -48,6 +48,7 @@ jobs:
       run: |
         dotnet pack ${GITHUB_REPOSITORY#*/}/${GITHUB_REPOSITORY#*/}.csproj --configuration Release --no-build --output ./artifacts /p:PackageVersion=${{ steps.get_version.outputs.VERSION }}
         dotnet pack ${GITHUB_REPOSITORY#*/}.Docker/${GITHUB_REPOSITORY#*/}.Docker.csproj --configuration Release --no-build --output ./artifacts /p:PackageVersion=${{ steps.get_version.outputs.VERSION }}
+        dotnet pack ${GITHUB_REPOSITORY#*/}.Docker/${GITHUB_REPOSITORY#*/}.ReferencesScanner.csproj --configuration Release --no-build --output ./artifacts /p:PackageVersion=${{ steps.get_version.outputs.VERSION }}
       
     - name: Publish to NuGet.org
       run: dotnet nuget push ./artifacts/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
