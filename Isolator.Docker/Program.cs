@@ -10,6 +10,7 @@ internal class Program
     {
         if (args.Length == 0)
         {
+            Console.Error.WriteLine("No plugin specified.");
             return -1;
         }
 

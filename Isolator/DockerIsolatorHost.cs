@@ -56,7 +56,7 @@ public class DockerIsolatorHost : IIsolationHost
             cancellationToken: cancellationToken);
 
         var containerMountPath = "/work";
-        var containerAssemblyPath = $"{containerMountPath}/Isolator.Docker.exe";
+        var containerAssemblyPath = $"{containerMountPath}/Isolator.Docker.dll";
 
         // Create container
         var createResponse = await _client.Containers.CreateContainerAsync(new CreateContainerParameters

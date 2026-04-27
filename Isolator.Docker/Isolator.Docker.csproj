@@ -5,17 +5,14 @@
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Title>Isolator</Title>
+    <Title>Isolator.Docker</Title>
     <Authors>Ricardo Peres</Authors>
     <PackageProjectUrl>https://github.com/rjperes/Isolator</PackageProjectUrl>
     <RepositoryUrl>https://github.com/rjperes/Isolator</RepositoryUrl>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Isolator\Isolator.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="$(TargetDir)Isolator.Docker.exe" Pack="true" PackagePath="./Isolator.Docker.exe" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>
