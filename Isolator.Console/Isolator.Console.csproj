@@ -8,8 +8,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Isolator.Docker\Isolator.Docker.csproj" />
-    <ProjectReference Include="..\Isolator.ReferencesScanner\Isolator.ReferencesScanner.csproj" />
+    <PackageReference Include="Isolator.Docker" Version="1.5.1" />
+    <PackageReference Include="Isolator.ReferencesScanner" Version="1.5.1" />
   </ItemGroup>
 
 </Project>
