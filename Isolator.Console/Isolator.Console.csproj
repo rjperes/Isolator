@@ -7,4 +7,9 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Isolator.Docker\Isolator.Docker.csproj" />
+    <ProjectReference Include="..\Isolator.ReferencesScanner\Isolator.ReferencesScanner.csproj" />
+  </ItemGroup>
+
 </Project>
