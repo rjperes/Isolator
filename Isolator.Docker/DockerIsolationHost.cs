@@ -6,16 +6,16 @@ using System.Text;
 
 namespace Isolator;
 
-public class DockerIsolatorHost : IIsolationHost
+public class DockerIsolationHost : IIsolationHost
 {
     private DockerClient? _client;
 
-    public DockerIsolatorHost()
+    public DockerIsolationHost()
     {
         _client = new DockerClientConfiguration().CreateClient();
     }
 
-    public DockerIsolatorHost(Uri dockerUrl, string? username = null, string? password = null)
+    public DockerIsolationHost(Uri dockerUrl, string? username = null, string? password = null)
     {
         Credentials credentials = !string.IsNullOrWhiteSpace(username) && !string.IsNullOrWhiteSpace(password) ?
             new BasicAuthCredentials(username!, password!) :
@@ -174,7 +174,7 @@ public class DockerIsolatorHost : IIsolationHost
 
     public async Task<PluginExecutionResult> ExecutePluginAsync<TPlugin>(TPlugin plugin, IsolationContext context, CancellationToken cancellationToken = default) where TPlugin : IPlugin, new()
     {
-        ObjectDisposedException.ThrowIf(_client is null, nameof(DockerIsolatorHost));
+        ObjectDisposedException.ThrowIf(_client is null, nameof(DockerIsolationHost));
 
         var hostFolder = Path.GetDirectoryName(plugin.GetType().Assembly.Location);
         var assemblyFileName = Path.GetFileName(plugin.GetType().Assembly.Location);
