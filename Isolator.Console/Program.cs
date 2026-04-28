@@ -32,10 +32,18 @@ internal class Program
 
     static async Task<PluginExecutionResult> TestUsingDockerIsolationHost<TPlugin>(TPlugin plugin, IsolationContext context) where TPlugin : IPlugin, new()
     {
-        using var host = new DockerIsolatorHost();
+        using var host = new DockerIsolationHost();
         var res = await host.ExecutePluginAsync(plugin, context);
         return res;
     }
+
+    static async Task<PluginExecutionResult> TestUsingWasmIsolationHost<TPlugin>(TPlugin plugin, IsolationContext context) where TPlugin : IPlugin, new()
+    {
+        using var host = new WasmIsolationHost();
+        var res = await host.ExecutePluginAsync(plugin, context);
+        return res;
+    }
+
 
     static async Task Main()
     {

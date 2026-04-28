@@ -11,3 +11,5 @@
 /Isolator.Docker/obj
 /Isolator.ReferencesScanner/bin
 /Isolator.ReferencesScanner/obj
+/Isolator.Wasm/bin
+/Isolator.Wasm/obj

@@ -12,4 +12,8 @@
     <PackageReference Include="Isolator.ReferencesScanner" Version="1.5.1" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Isolator.Wasm\Isolator.Wasm.csproj" />
+  </ItemGroup>
+
 </Project>
