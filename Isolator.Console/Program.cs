@@ -72,7 +72,8 @@ internal class Program
         //var res2 = await TestUsingProcessIsolationHost(plugin, context);
         //var res3 = await TestUsingNullIsolationHost(plugin, context);
         //var res4 = await TestUsingClientIsolationHost(plugin, context);
-        var res5 = await TestUsingDockerIsolationHost(plugin, context);
+        //var res5 = await TestUsingDockerIsolationHost(plugin, context);
+        var res6 = await TestUsingWasmIsolationHost(plugin, context);
 
         System.Console.ReadLine();
     }

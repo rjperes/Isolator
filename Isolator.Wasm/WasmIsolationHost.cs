@@ -31,10 +31,10 @@ public class WasmIsolationHost : IIsolationHost
 
         using var capture = Capture.Start(stdout, stderr);
 
-        var result = _runtime.Invoke<object?>(() =>
-        {
-            return plugin.Execute(context);
-        });
+        var obj = _runtime.CreateObject(plugin.GetType().Assembly.FullName, plugin.GetType().Namespace, plugin.GetType().Name);
+        var method = _runtime.GetMethod(plugin.GetType().Assembly.FullName, plugin.GetType().Namespace, null, plugin.GetType().Name, nameof(IPlugin.Execute), 1);
+
+        var result = method.Invoke<IsolationContext, object?>(obj, context);
 
         return Task.FromResult(new PluginExecutionResult(stdout.ToString(), stderr.ToString(), result));
     }
