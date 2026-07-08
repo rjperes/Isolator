@@ -9,4 +9,7 @@ The following strategies are implemented:
 * Distributed isolation: the plugin is executed on a possibly remote machine via TCP/IP connection
 * Docker: a Docker image is spawn for running the plugin and is then destroyed
 
+[![Nuget downloads](https://img.shields.io/nuget/v/isolator.svg)](https://www.nuget.org/packages/Isolator/)
+[![Nuget](https://img.shields.io/nuget/dt/isolator)](https://www.nuget.org/packages/Isolator/)
+[![License: Apache 2](https://img.shields.io/badge/License-Apache2-yellow.svg)](https://github.com/rjperes/Isolator/blob/master/LICENSE.txt)
 [![Build](https://github.com/rjperes/Isolator/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/rjperes/Isolator/actions/workflows/build-and-test.yml)
