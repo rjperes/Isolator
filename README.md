@@ -8,3 +8,5 @@ The following strategies are implemented:
 * Assembly isolation: a new assembly is used for executing the plugin and then unloaded
 * Distributed isolation: the plugin is executed on a possibly remote machine via TCP/IP connection
 * Docker: a Docker image is spawn for running the plugin and is then destroyed
+
+[![Build](https://github.com/rjperes/Isolator/actions/workflows/build-and-test.yml/badge.svg)](https://github.com/rjperes/Isolator/actions/workflows/build-and-test.yml)
