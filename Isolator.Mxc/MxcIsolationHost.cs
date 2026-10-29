@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using Microsoft.Mxc.Sdk.V1;
 
@@ -5,6 +6,7 @@ namespace Isolator;
 
 public static class MxcIsolationProperties
 {
+    internal const string Prefix = "Mxc.";
     public const string Filesystem = "Mxc.Filesystem";
     public const string Network = "Mxc.Network";
     public const string Ui = "Mxc.Ui";
@@ -18,6 +20,9 @@ public static class MxcIsolationProperties
 
 public sealed class MxcIsolationHost : BaseIsolationHost
 {
+    private static readonly StringComparer _pathComparer =
+        OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
+
     private static readonly string _programSource = $$"""
         using System;
         using System.IO;
@@ -113,6 +118,8 @@ public sealed class MxcIsolationHost : BaseIsolationHost
                 ?? new FilesystemPolicy();
             filesystem = CopyFilesystemPolicy(filesystem);
             AddReadOnlyPath(filesystem, outputDir);
+            var dotnetPath = GetDotnetPath();
+            AddReadOnlyPath(filesystem, Path.GetDirectoryName(dotnetPath)!);
             var pluginDirectory = Path.GetDirectoryName(pluginAssemblyPath);
             if (pluginDirectory is not null)
             {
@@ -120,7 +127,7 @@ public sealed class MxcIsolationHost : BaseIsolationHost
             }
 
             var request = new ContainerRequest(
-                $"{QuoteCommandArgument("dotnet")} {QuoteCommandArgument(dllPath)} {QuoteCommandArgument(envelopePath)}")
+                $"{QuoteCommandArgument(dotnetPath)} {QuoteCommandArgument(dllPath)} {QuoteCommandArgument(envelopePath)}")
             {
                 Containment = GetProperty<Containment>(context, MxcIsolationProperties.Containment)
                     ?? new Containment.Process(),
@@ -135,7 +142,42 @@ public sealed class MxcIsolationHost : BaseIsolationHost
                 InheritDefaultEnvironment = GetProperty<bool>(context, MxcIsolationProperties.InheritDefaultEnvironment),
             };
 
-            var runResult = await MxcContainer.RunAsync(request, cancellationToken: cancellationToken);
+            using var process = await MxcContainer.SpawnAsync(request, cancellationToken: cancellationToken);
+            using var stdoutReader = process.StandardOutput is { } standardOutput
+                ? new StreamReader(standardOutput)
+                : null;
+            using var stderrReader = process.StandardError is { } standardError
+                ? new StreamReader(standardError)
+                : null;
+            var stdoutTask = stdoutReader?.ReadToEndAsync() ?? Task.FromResult(string.Empty);
+            var stderrTask = stderrReader?.ReadToEndAsync() ?? Task.FromResult(string.Empty);
+
+            WaitResult runResult;
+            string stdout;
+            string stderr;
+            try
+            {
+                runResult = await process.WaitAsync(cancellationToken);
+                var output = await Task.WhenAll(stdoutTask, stderrTask);
+                stdout = output[0];
+                stderr = output[1];
+            }
+            finally
+            {
+                try
+                {
+                    if (!process.TryGetExitCode(out _))
+                    {
+                        process.Kill();
+                    }
+                }
+                finally
+                {
+                    await process.WaitAsync(CancellationToken.None);
+                    await Task.WhenAll(stdoutTask, stderrTask);
+                }
+            }
+
             if (runResult.TimedOut)
             {
                 throw new TimeoutException("MXC terminated the plugin after its execution timeout.");
@@ -143,11 +185,17 @@ public sealed class MxcIsolationHost : BaseIsolationHost
             if (runResult.ExitCode != 0)
             {
                 throw new InvalidOperationException(
-                    $"MXC plugin process exited with code {runResult.ExitCode}: {runResult.Stderr}");
+                    $"MXC plugin process exited with code {runResult.ExitCode}: {stderr}");
             }
 
-            var execution = IsolationHelper.Deserialize<ExecutionResult>(runResult.Stdout);
-            CopyProperties(execution.Properties, context.Properties);
+            var execution = IsolationHelper.Deserialize<ExecutionResult>(stdout);
+            foreach (var (key, value) in execution.Properties)
+            {
+                if (!key.StartsWith(MxcIsolationProperties.Prefix, StringComparison.OrdinalIgnoreCase))
+                {
+                    context.Properties[key] = value;
+                }
+            }
 
             var result = execution.Result;
             if (result is not null && !string.IsNullOrWhiteSpace(execution.ResultType))
@@ -194,10 +242,43 @@ public sealed class MxcIsolationHost : BaseIsolationHost
 
     private static void AddReadOnlyPath(FilesystemPolicy filesystem, string path)
     {
-        if (!filesystem.ReadonlyPaths.Contains(path, StringComparer.OrdinalIgnoreCase))
+        if (filesystem.ReadwritePaths.Any(existingPath => PathsOverlap(existingPath, path)) ||
+            filesystem.DeniedPaths.Any(deniedPath => IsPathWithin(path, deniedPath)) ||
+            filesystem.ReadonlyPaths.Any(existingPath => IsPathWithin(path, existingPath)))
         {
-            filesystem.ReadonlyPaths.Add(path);
+            return;
         }
+
+        filesystem.ReadonlyPaths.Add(path);
+    }
+
+    private static string GetDotnetPath()
+    {
+        var dotnetRoot = Path.GetFullPath(Path.Combine(
+            RuntimeEnvironment.GetRuntimeDirectory(),
+            "..",
+            "..",
+            ".."));
+        var dotnetPath = Path.Combine(dotnetRoot, OperatingSystem.IsWindows() ? "dotnet.exe" : "dotnet");
+        if (!File.Exists(dotnetPath))
+        {
+            throw new InvalidOperationException("Could not locate the .NET host for the current runtime.");
+        }
+
+        return dotnetPath;
+    }
+
+    private static bool PathsOverlap(string firstPath, string secondPath) =>
+        IsPathWithin(firstPath, secondPath) || IsPathWithin(secondPath, firstPath);
+
+    private static bool IsPathWithin(string path, string directory)
+    {
+        var relativePath = Path.GetRelativePath(Path.GetFullPath(directory), Path.GetFullPath(path));
+        return _pathComparer.Equals(relativePath, ".") ||
+            (!Path.IsPathRooted(relativePath) &&
+             !_pathComparer.Equals(relativePath, "..") &&
+             !relativePath.StartsWith($"..{Path.DirectorySeparatorChar}", StringComparison.Ordinal) &&
+             !relativePath.StartsWith($"..{Path.AltDirectorySeparatorChar}", StringComparison.Ordinal));
     }
 
     private static string QuoteCommandArgument(string argument) =>
