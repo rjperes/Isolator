@@ -8,6 +8,9 @@ The following strategies are implemented:
 * Assembly isolation: a new assembly is used for executing the plugin and then unloaded
 * Distributed isolation: the plugin is executed on a possibly remote machine via TCP/IP connection
 * Docker: a Docker image is spawn for running the plugin and is then destroyed
+* MXC: a Microsoft.Mxc.Sdk container is used for executing the plugin
+
+The `Isolator.Mxc` project provides `MxcIsolationHost`. MXC request options, including filesystem, network, UI, and containment policies, can be passed through `IsolationContext.Properties` using the keys in `MxcIsolationProperties`.
 
 [![Nuget downloads](https://img.shields.io/nuget/v/isolator.svg)](https://www.nuget.org/packages/Isolator/)
 [![Nuget](https://img.shields.io/nuget/dt/isolator)](https://www.nuget.org/packages/Isolator/)
