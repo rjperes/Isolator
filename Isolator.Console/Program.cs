@@ -69,12 +69,12 @@ internal class Program
         //wait for the server to start
         Thread.Sleep(3000);
 
-        //var res1 = await TestUsingAssemblyLoadContextIsolationHost(plugin, context);
+        var res1 = await TestUsingAssemblyLoadContextIsolationHost(plugin, context);
         //var res2 = await TestUsingProcessIsolationHost(plugin, context);
         //var res3 = await TestUsingNullIsolationHost(plugin, context);
         //var res4 = await TestUsingClientIsolationHost(plugin, context);
         //var res5 = await TestUsingDockerIsolationHost(plugin, context);
-        var res6 = await TestUsingMxcIsolationHost(plugin, context);
+        //var res6 = await TestUsingMxcIsolationHost(plugin, context);
 
         System.Console.ReadLine();
     }
