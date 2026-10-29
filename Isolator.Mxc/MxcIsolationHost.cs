@@ -1,8 +1,8 @@
+using Microsoft.Mxc.Sdk.V1;
 using System.Runtime.InteropServices;
 using System.Text.Json;
-using Microsoft.Mxc.Sdk.V1;
 
-namespace Isolator;
+namespace Isolator.Mxc;
 
 public static class MxcIsolationProperties
 {
@@ -20,8 +20,8 @@ public static class MxcIsolationProperties
 
 public sealed class MxcIsolationHost : BaseIsolationHost
 {
-    private static readonly StringComparer _pathComparer =
-        OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
+    private static readonly StringComparer _pathComparer = OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
+    private static readonly string _runtimeConfig = $"{{\r\n  \"runtimeOptions\": {{\r\n    \"tfm\": \"net10.0\",\r\n    \"framework\": {{\r\n      \"name\": \"Microsoft.NETCore.App\",\r\n      \"version\": \"10.0.0\"\r\n    }},\r\n    \"rollForward\": \"Minor\",\r\n    \"configProperties\": {{\r\n      \"System.GC.Server\": true,\r\n      \"System.GC.Concurrent\": true\r\n    }}\r\n  }}\r\n}}";
 
     private static readonly string _programSource = $$"""
         using System;
@@ -83,22 +83,9 @@ public sealed class MxcIsolationHost : BaseIsolationHost
                 isApp: true,
                 cancellationToken);
 
-            var version = new Version(Environment.Version.Major, Environment.Version.Minor, 0);
-            var runtimeConfig = $$"""
-                {
-                  "runtimeOptions": {
-                    "tfm": "net9.0",
-                    "framework": {
-                      "name": "Microsoft.NETCore.App",
-                      "version": "{{version}}"
-                    },
-                    "rollForward": "LatestMinor"
-                  }
-                }
-                """;
             await File.WriteAllTextAsync(
                 Path.Combine(outputDir, $"{_runnerName}.runtimeconfig.json"),
-                runtimeConfig,
+                _runtimeConfig,
                 cancellationToken);
 
             CopyIsolationAssembly(outputDir);
@@ -126,35 +113,35 @@ public sealed class MxcIsolationHost : BaseIsolationHost
                 AddReadOnlyPath(filesystem, pluginDirectory);
             }
 
-            var request = new ContainerRequest(
-                $"{QuoteCommandArgument(dotnetPath)} {QuoteCommandArgument(dllPath)} {QuoteCommandArgument(envelopePath)}")
+            var request = new ContainerRequest($"{QuoteCommandArgument(dotnetPath)} {QuoteCommandArgument(dllPath)} {QuoteCommandArgument(envelopePath)}")
             {
-                Containment = GetProperty<Containment>(context, MxcIsolationProperties.Containment)
-                    ?? new Containment.Process(),
+                Containment = GetProperty<Containment>(context, MxcIsolationProperties.Containment) ?? new Containment.Process(),
                 Filesystem = filesystem,
                 Network = GetProperty<NetworkPolicy>(context, MxcIsolationProperties.Network),
                 Ui = GetProperty<UiPolicy>(context, MxcIsolationProperties.Ui),
                 TimeoutMs = GetProperty<uint?>(context, MxcIsolationProperties.TimeoutMs),
                 ContainerName = GetProperty<string>(context, MxcIsolationProperties.ContainerName),
-                WorkingDirectory = GetProperty<string>(context, MxcIsolationProperties.WorkingDirectory)
-                    ?? outputDir,
+                WorkingDirectory = GetProperty<string>(context, MxcIsolationProperties.WorkingDirectory) ?? outputDir,
                 Environment = GetProperty<Dictionary<string, string>>(context, MxcIsolationProperties.Environment),
                 InheritDefaultEnvironment = GetProperty<bool>(context, MxcIsolationProperties.InheritDefaultEnvironment),
             };
 
             using var process = await MxcContainer.SpawnAsync(request, cancellationToken: cancellationToken);
+
             using var stdoutReader = process.StandardOutput is { } standardOutput
                 ? new StreamReader(standardOutput)
                 : null;
             using var stderrReader = process.StandardError is { } standardError
                 ? new StreamReader(standardError)
                 : null;
-            var stdoutTask = stdoutReader?.ReadToEndAsync() ?? Task.FromResult(string.Empty);
-            var stderrTask = stderrReader?.ReadToEndAsync() ?? Task.FromResult(string.Empty);
+
+            var stdoutTask = stdoutReader?.ReadToEndAsync(cancellationToken) ?? Task.FromResult(string.Empty);
+            var stderrTask = stderrReader?.ReadToEndAsync(cancellationToken) ?? Task.FromResult(string.Empty);
 
             WaitResult runResult;
             string stdout;
             string stderr;
+
             try
             {
                 runResult = await process.WaitAsync(cancellationToken);

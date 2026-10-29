@@ -1,0 +1,11 @@
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageVersion Include="Docker.DotNet.BasicAuth" Version="3.125.15" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="5.9.0" />
+    <PackageVersion Include="Microsoft.Mxc.Sdk" Version="1.0.1" />
+    <PackageVersion Include="ReferencesScanner" Version="1.0.0" />
+  </ItemGroup>
+</Project>

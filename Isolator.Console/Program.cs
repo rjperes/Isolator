@@ -1,4 +1,6 @@
-﻿namespace Isolator.Console;
+﻿using Isolator.Mxc;
+
+namespace Isolator.Console;
 
 internal class Program
 {
@@ -32,7 +34,14 @@ internal class Program
 
     static async Task<PluginExecutionResult> TestUsingDockerIsolationHost<TPlugin>(TPlugin plugin, IsolationContext context) where TPlugin : IPlugin, new()
     {
-        using var host = new DockerIsolatorHost();
+        using var host = new DockerIsolationHost();
+        var res = await host.ExecutePluginAsync(plugin, context);
+        return res;
+    }
+
+    static async Task<PluginExecutionResult> TestUsingMxcIsolationHost<TPlugin>(TPlugin plugin, IsolationContext context) where TPlugin : IPlugin, new()
+    {
+        using var host = new MxcIsolationHost();
         var res = await host.ExecutePluginAsync(plugin, context);
         return res;
     }
@@ -64,7 +73,8 @@ internal class Program
         //var res2 = await TestUsingProcessIsolationHost(plugin, context);
         //var res3 = await TestUsingNullIsolationHost(plugin, context);
         //var res4 = await TestUsingClientIsolationHost(plugin, context);
-        var res5 = await TestUsingDockerIsolationHost(plugin, context);
+        //var res5 = await TestUsingDockerIsolationHost(plugin, context);
+        var res6 = await TestUsingMxcIsolationHost(plugin, context);
 
         System.Console.ReadLine();
     }
