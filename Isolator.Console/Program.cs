@@ -1,4 +1,5 @@
 ﻿using Isolator.Mxc;
+using Microsoft.Mxc.Sdk.V1;
 
 namespace Isolator.Console;
 
@@ -39,8 +40,15 @@ internal class Program
         return res;
     }
 
-    static async Task<PluginExecutionResult> TestUsingMxcIsolationHost<TPlugin>(TPlugin plugin, IsolationContext context) where TPlugin : IPlugin, new()
+    static async Task<PluginExecutionResult?> TestUsingMxcIsolationHost<TPlugin>(TPlugin plugin, IsolationContext context) where TPlugin : IPlugin, new()
     {
+        var platformSupport = MxcPlatform.GetPlatformSupport();
+        if (!platformSupport.IsSupported)
+        {
+            System.Console.Error.WriteLine($"MXC is unavailable: {platformSupport.Reason}");
+            return null;
+        }
+
         using var host = new MxcIsolationHost();
         var res = await host.ExecutePluginAsync(plugin, context);
         return res;
@@ -48,8 +56,6 @@ internal class Program
 
     static async Task Main()
     {
-        using var server = new IsolationHostServer();
-        var client = new IsolationHostClient();
         var context = new IsolationContext
         {
             Properties = new Dictionary<string, object>
@@ -59,22 +65,14 @@ internal class Program
             Arguments = ["This", "is", "a", "test"]
         };
 
-        ThreadPool.QueueUserWorkItem(async _ =>
-        {
-            await server.ReceiveAsync(5000, CancellationToken.None);
-        });
-
         var plugin = new HelloWorldPlugin();
 
-        //wait for the server to start
-        Thread.Sleep(3000);
-
-        var res1 = await TestUsingAssemblyLoadContextIsolationHost(plugin, context);
+        //var res1 = await TestUsingAssemblyLoadContextIsolationHost(plugin, context);
         //var res2 = await TestUsingProcessIsolationHost(plugin, context);
         //var res3 = await TestUsingNullIsolationHost(plugin, context);
         //var res4 = await TestUsingClientIsolationHost(plugin, context);
         //var res5 = await TestUsingDockerIsolationHost(plugin, context);
-        //var res6 = await TestUsingMxcIsolationHost(plugin, context);
+        var res6 = await TestUsingMxcIsolationHost(plugin, context);
 
         System.Console.ReadLine();
     }
