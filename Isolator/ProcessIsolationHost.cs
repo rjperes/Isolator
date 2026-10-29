@@ -7,7 +7,7 @@ public sealed class ProcessIsolationHost : BaseIsolationHost
 {
     private const string _dotnetFileName = "dotnet";
     private static readonly string _version = new Version(Environment.Version.Major, Environment.Version.Minor, 0).ToString();
-    private static readonly string _runtimeConfig = $"{{\n \"runtimeOptions\": {{\n \"tfm\": \"net10.0\",\n \"framework\": {{\n \"name\": \"Microsoft.NETCore.App\",\n \"version\": \"{_version}\"\n }},\n \"rollForward\": \"LatestMinor\"\n }}\n}}";
+    private static readonly string _runtimeConfig = $"{{\n \"runtimeOptions\": {{\n \"tfm\": \"net{Environment.Version.Major}.0\",\n \"framework\": {{\n \"name\": \"Microsoft.NETCore.App\",\n \"version\": \"{_version}\"\n }},\n \"rollForward\": \"LatestMinor\"\n }}\n}}";
 
     private static readonly string _programSource = $$"""
         using Isolator;

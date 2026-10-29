@@ -21,7 +21,8 @@ public static class MxcIsolationProperties
 public sealed class MxcIsolationHost : BaseIsolationHost
 {
     private static readonly StringComparer _pathComparer = OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
-    private static readonly string _runtimeConfig = $"{{\r\n  \"runtimeOptions\": {{\r\n    \"tfm\": \"net10.0\",\r\n    \"framework\": {{\r\n      \"name\": \"Microsoft.NETCore.App\",\r\n      \"version\": \"10.0.0\"\r\n    }},\r\n    \"rollForward\": \"Minor\",\r\n    \"configProperties\": {{\r\n      \"System.GC.Server\": true,\r\n      \"System.GC.Concurrent\": true\r\n    }}\r\n  }}\r\n}}";
+    private static readonly string _version = new Version(Environment.Version.Major, Environment.Version.Minor, 0).ToString();
+    private static readonly string _runtimeConfig = $"{{\r\n  \"runtimeOptions\": {{\r\n    \"tfm\": \"net{Environment.Version.Major}.0\",\r\n    \"framework\": {{\r\n      \"name\": \"Microsoft.NETCore.App\",\r\n      \"version\": \"{_version}\"\r\n    }},\r\n    \"rollForward\": \"Minor\",\r\n    \"configProperties\": {{\r\n      \"System.GC.Server\": true,\r\n      \"System.GC.Concurrent\": true\r\n    }}\r\n  }}\r\n}}";
 
     private static readonly string _programSource = $$"""
         using System;
